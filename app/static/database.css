@@ -1,0 +1,1355 @@
+/* Utility class to hide elements */
+.hidden {
+  display: none !important;
+}
+
+.upload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ✅ Year on left, upload on right */
+  margin-bottom: 20px;
+}
+
+#currentYearDisplay {
+  color: #0437f2; /* ✅ Match the theme blue */
+  font-weight: 600;
+  margin: 0; /* remove default h2 spacing */
+  font-size: 2rem; /* adjust size to match style */
+}
+
+.upload-form {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: flex-end; /* ✅ Pushes upload form to the right */
+}
+
+.upload-form input[type="file"] {
+  padding: 10px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+}
+
+.upload-btn {
+  padding: 12px 24px;
+  border-radius: 20px;
+  background-color: #0437f2;
+  color: white;
+  border: none;
+  font-weight: 600;
+  font-family: "Chillax", sans-serif;
+  cursor: pointer;
+}
+
+.upload-btn:hover {
+  background-color: #0429d1;
+}
+
+/* Table Container with Modern Card Look */
+.table-container {
+  margin-top: 20px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(4, 55, 242, 0.12);
+  background: white;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Chillax", sans-serif;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+  background-color: #0437f2;
+  color: white;
+  font-weight: 600;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f4f7fe;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+  background-color: #0437f2 !important;
+  color: white !important;
+  border-radius: 5px;
+  padding: 5px 10px;
+  margin: 2px;
+  font-weight: 500;
+  font-family: "Chillax", sans-serif;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+  background-color: #0429d1 !important;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  margin-left: 10px;
+}
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_info {
+  font-family: "Chillax", sans-serif;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  padding-top: 10px;
+}
+
+.table-container {
+  margin-top: 20px;
+  overflow-x: auto;
+  overflow-y: auto; /* enable vertical scroll */
+  max-height: 500px; /* adjust height */
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.year-buttons {
+  margin-top: 15px;
+  text-align: center;
+}
+
+/* Individual Year Buttons */
+.year-btn {
+  background: white;
+  color: #475569;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin: 0;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.year-btn.active {
+  background-color: #0429d1;
+}
+
+.year-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+}
+
+.edit-btn {
+  background-color: #0437f2;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #d9534f;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #c9302c;
+}
+
+.save-btn {
+  padding: 8px 16px;
+  background-color: #0437f2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+}
+
+.save-btn:hover {
+  background-color: #032bbd;
+}
+
+.edit-table-btn,
+.save-btn {
+  padding: 12px 24px;
+  border-radius: 20px;
+  background-color: #0437f2;
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+}
+
+.edit-table-btn:hover,
+.save-btn:hover {
+  background-color: #032bbd;
+}
+
+/* Highlight style for selected rows */
+.row-selected {
+  background-color: #dbeafe !important; /* Light blue highlight */
+}
+
+.upload-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#deleteSelectedBtn {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 24px;
+  border-radius: 20px;
+}
+
+#deleteSelectedBtn:hover {
+  background-color: #c9302c;
+}
+
+.dataTables_info_container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Navigation Arrows */
+.year-nav-btn {
+  background: white;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.year-nav-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: scale(1.05);
+}
+
+.year-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Control Buttons Styling */
+.edit-table-btn,
+.save-btn,
+#deleteSelectedBtn {
+  border: none;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-table-btn {
+  background: linear-gradient(135deg, #0437f2 0%, #0654ff 100%);
+  color: white;
+}
+
+.edit-table-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(4, 55, 242, 0.3);
+}
+
+#deleteSelectedBtn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+#deleteSelectedBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+/* Undo/Redo Button Styles */
+#undoBtn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+#redoBtn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+}
+
+#cancelEditBtn {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+  color: white;
+}
+
+/* Upload Header */
+.upload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e8edf5;
+}
+
+#currentYearDisplay {
+  color: #0437f2;
+  font-weight: 700;
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: -0.5px;
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #0437f2 0%, #0654ff 100%);
+  border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #032bbd 0%, #0437f2 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  #uploadedTable thead th,
+  #uploadedTable tbody td {
+    padding: 12px 16px;
+    font-size: 0.85rem;
+  }
+
+  .year-btn,
+  .year-nav-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  #currentYearDisplay {
+    font-size: 1.8rem;
+  }
+}
+
+.year-buttons .year-btn,
+.year-buttons .year-nav-btn {
+  background-color: white; /* Default white background */
+  color: black; /* Black text for default */
+  border: 2px solid #0437f2; /* Blue border */
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: 0 3px;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.year-btn.active {
+  background: linear-gradient(135deg, #0437f2 0%, #0654ff 100%);
+  color: white;
+  border-color: #0437f2;
+  box-shadow: 0 4px 12px rgba(4, 55, 242, 0.25);
+  transform: translateY(-1px);
+}
+
+.year-buttons .year-btn.active {
+  background-color: #0437f2; /* Solid blue for active */
+  color: white; /* White text for active */
+  border: 2px solid #0437f2;
+}
+
+.year-buttons .year-btn:hover,
+.year-buttons .year-nav-btn:hover {
+  background-color: #e5ecff; /* Light blue hover */
+}
+
+.year-buttons .year-nav-btn {
+  color: #333; /* Arrows text color */
+}
+
+.upload-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end; /* Keeps them aligned nicely */
+}
+
+.left-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.merge-btn {
+  background-color: #f0ad4e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-family: "Chillax", sans-serif;
+}
+
+.merge-btn:hover {
+  background-color: #ec971f;
+}
+
+.retrain-btn {
+  background-color: #5cb85c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-family: "Chillax", sans-serif;
+}
+
+.retrain-btn:hover {
+  background-color: #4cae4c;
+}
+
+.file-selection {
+  text-align: center;
+  padding: 30px;
+}
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.file-card {
+  background: #f9f9f9;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  /* ✅ Center contents */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.file-card:hover {
+  border-color: #0437f2;
+  background: #eef2ff;
+}
+
+.file-card p {
+  margin: 0;
+  font-weight: 500;
+  text-align: center; /* ✅ force center text */
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+  color: #0437f2;
+}
+
+.hidden {
+  display: none;
+}
+
+.file-selection-container {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* top align */
+  margin-bottom: 25px;
+}
+
+.file-header h2 {
+  font-size: 1.5rem;
+  color: #0437f2;
+  margin: 0;
+}
+
+.file-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 6px;
+}
+
+.file-grid-left {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-start; /* ✅ align to left */
+}
+
+.file-header p {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 4px 0 0;
+}
+
+.file-grid-centered {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-start;
+}
+
+.file-card-big {
+  background: #f9f9f9;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+
+  width: 150px;
+  height: 120px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+  color: #0437f2; /* ✅ text color blue by default */
+}
+
+.file-card-big.active {
+  background: #0437f2;
+  color: white;
+}
+
+/* Truncate long names */
+.file-card-big p {
+  margin: 0;
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  color: #0437f2; /* ✅ blue text */
+}
+
+/* Hover effect */
+.file-card-big:hover {
+  background: #0437f2;
+  color: white;
+}
+
+.file-icon-big {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  color: #0437f2; /* ✅ blue icon by default */
+}
+
+.file-card-big:hover .file-icon-big,
+.file-card-big:hover p {
+  color: white; /* ✅ turn white on hover */
+}
+
+.file-card-big.active {
+  background: #f9f9f9; /* same as default */
+  color: #0437f2; /* same as default text color */
+}
+
+.file-card-big.active .file-icon-big,
+.file-card-big.active p {
+  color: #0437f2; /* same as default */
+}
+
+.context-menu {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  padding: 5px 0;
+  list-style: none;
+  z-index: 1000;
+  width: 150px;
+}
+
+.context-menu li {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: "Chillax", sans-serif;
+}
+
+.context-menu li:hover {
+  background: #0437f2;
+  color: white;
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.modal.hidden {
+  display: none;
+}
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+}
+
+.modal-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal-box {
+  position: relative;
+  width: 360px;
+  background: white;
+  padding: 60px 50px;
+  border-radius: 25px;
+  margin: 80px auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  font-family: "Chillax", sans-serif;
+}
+
+.close-btn {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  color: #0437f2;
+}
+
+.modal-label {
+  display: block;
+  font-weight: 600;
+  color: #0437f2;
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.modal-input {
+  margin-bottom: 5px;
+  width: 98%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* always 2 equal columns */
+  gap: 15px;
+  justify-items: center;
+}
+
+.upload-slot {
+  width: 150px;
+  height: 120px;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.upload-slot .file-name {
+  display: none;
+  font-size: 0.8rem;
+  color: #0437f2;
+  margin: 0;
+  line-height: 1.2;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-slot:hover {
+  border-color: #0437f2;
+}
+
+.upload-slot .file-placeholder,
+.upload-slot .file-name {
+  font-size: 0.8rem;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Default + icon */
+.upload-slot .plus-icon {
+  font-size: 50px;
+  color: #0437f2;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+/* Default placeholder text */
+.upload-slot .file-placeholder {
+  font-size: 0.8rem;
+  color: #555;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* File icon + filename (hidden by default) */
+.upload-slot .file-icon {
+  display: none;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+  color: #0437f2;
+}
+
+.done-btn {
+  display: block;
+  width: 100%;
+  background: #0437f2;
+  color: white;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 30px;
+}
+.done-btn:hover {
+  background: #032bbd;
+}
+
+/* Modal bits you already have… keep using them */
+
+/* Progress bar */
+.pb-wrapper {
+  margin-top: 20px;
+}
+.pb-rail {
+  position: relative;
+  height: 8px;
+  background: #e6edf7;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  margin: 0 30px; /* 🔹 makes the line shorter by adding space on both ends */
+}
+
+.pb-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8px;
+  z-index: 1;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #21c17a, #2ea0ff);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  transition: width 0.4s ease;
+}
+.pb-badge {
+  transform: translate(50%, -150%);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #21c17a;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.pb-steps {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+  transform: translateY(14px);
+  padding: 0;
+  width: 100%;
+}
+/* Keep labels under the line */
+.pb-step {
+  position: absolute; /* allow exact placement */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%); /* center the span on its position */
+}
+
+#dot-merge {
+  left: 0%;
+}
+#dot-preprocess {
+  left: 50%;
+}
+#dot-complete {
+  left: 100%;
+}
+
+.pb-step span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #bcd3f5;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #bcd3f5;
+}
+
+.pb-step small {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #5a6b85;
+}
+
+.pb-step.active span {
+  background: #2ea0ff;
+  box-shadow: 0 0 0 2px #2ea0ff;
+}
+.pb-step.done span {
+  background: #21c17a;
+  box-shadow: 0 0 0 2px #21c17a;
+}
+
+.pb-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 50px;
+}
+button.primary {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  background: #2ea0ff;
+  box-shadow: 0 6px 14px rgba(46, 160, 255, 0.25);
+}
+button.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.title {
+  margin: 0 0 6px;
+  color: #09224d;
+}
+.subtitle {
+  margin: 0 0 16px;
+  color: #6a7a96;
+}
+.note {
+  margin-top: 14px;
+  color: #5a6b85;
+  font-size: 13px;
+}
+
+.no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px; /* space under the description */
+  padding: 20px 0; /* vertical spacing */
+  text-align: center;
+  color: #0437f2;
+  font-size: 18px;
+  font-weight: 600;
+  gap: 15px;
+  background: none; /* ✅ no background */
+  box-shadow: none; /* ✅ remove shadow */
+  border-radius: 0; /* ✅ remove rounded card look */
+}
+
+.main-content {
+  flex: 1;
+  padding-left: 30px;
+  overflow-y: auto;
+}
+
+/* DataTables Wrapper */
+#uploadedTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: "Chillax", sans-serif;
+  background: white;
+}
+
+/* Table Header Styling */
+#uploadedTable thead th {
+  background: linear-gradient(135deg, #0437f2 0%, #0654ff 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 20px;
+  text-align: left;
+  border: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(4, 55, 242, 0.15);
+  padding-right: 30px !important; /* Creates space for sorting arrows */
+}
+
+/* First column header (checkbox) */
+#uploadedTable thead th:first-child {
+  border-top-left-radius: 16px;
+  padding-left: 24px;
+}
+
+/* Last column header (actions) */
+#uploadedTable thead th:last-child {
+  border-top-right-radius: 16px;
+  padding-right: 24px;
+}
+
+/* Table Body Cells */
+#uploadedTable tbody td {
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  color: #2d3748;
+  border-bottom: 1px solid #e8edf5;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+/* First and last cell padding */
+#uploadedTable tbody td:first-child {
+  padding-left: 24px;
+}
+
+#uploadedTable tbody td:last-child {
+  padding-right: 24px;
+}
+
+/* Alternating Row Colors */
+#uploadedTable tbody tr:nth-child(even) {
+  background: #f7f9fc;
+}
+
+/* Row Hover Effect */
+#uploadedTable tbody tr:hover {
+  background: #eef4ff;
+  transform: scale(1.001);
+  box-shadow: 0 2px 8px rgba(4, 55, 242, 0.08);
+}
+
+/* Selected Row Highlight */
+.row-selected {
+  background: #dbeafe !important;
+  border-left: 3px solid #0437f2;
+}
+
+.row-selected:hover {
+  background: #c7e0fd !important;
+}
+
+/* Checkbox Styling */
+#uploadedTable input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #0437f2;
+  border-radius: 4px;
+}
+
+/* Select-all checkbox in header */
+#select-all {
+  cursor: pointer;
+}
+
+/* Action Buttons in Table */
+#uploadedTable .delete-btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+}
+
+#uploadedTable .delete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Empty State */
+.dataTables_empty {
+  padding: 40px 20px !important;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+/* Info Text Styling */
+.dataTables_info {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+  padding: 12px 0;
+}
+
+/* Year Buttons Container */
+.year-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #e8edf5;
+}
+
+/* Year Button Group */
+.year-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Style for cells that cannot be edited */
+td.is-readonly {
+  background-color: #f8f9fa; /* A very light gray */
+  cursor: not-allowed; /* Shows a "disabled" cursor on hover */
+  color: #6c757d; /* Muted text color */
+}
+
+/* Styling for the new Export button dropdown */
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none; /* Hidden by default */
+  position: absolute;
+  background-color: #ffffff;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 100; /* Ensure it appears above the table */
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  overflow: hidden; /* Ensures child elements conform to border-radius */
+}
+
+.dropdown-content a {
+  color: #333;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  text-align: left;
+}
+
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+
+/* This class will be toggled by JavaScript to show/hide the menu */
+.dropdown-content.show {
+  display: block;
+}
+/* === NEW: Searchable Dropdown Styles for Modal === */
+
+.modal-content .filter-dropdown {
+  position: relative;
+}
+
+.modal-content .filter-select {
+  width: 100%;
+  padding: 15px 45px 15px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: text;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box; /* Ensures padding doesn't break layout */
+}
+
+.modal-content .filter-select:focus {
+  border-color: #0437f2;
+}
+
+.modal-content .dropdown-arrow {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.modal-content .dropdown-list {
+  font-family: "Chillax", sans-serif;
+  font-weight: 500; /* Override global bold */
+  display: none;
+  position: absolute;
+  width: 100%;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.modal-content .dropdown-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.modal-content .dropdown-item:hover {
+  background-color: #f4f7fe;
+  color: #0437f2;
+}
+
+.modal-content .dropdown-item.no-results {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.modal-content .dropdown-item.no-results:hover {
+  background-color: transparent;
+}
+
+/* === Searchable Dropdown Styles for ALL Modals === */
+
+/* Target the dropdowns within either type of modal */
+.modal-content .filter-dropdown,
+.modal-box .filter-dropdown {
+  position: relative;
+}
+
+.modal-content .filter-select,
+.modal-box .filter-select {
+  width: 100%;
+  padding: 15px 45px 15px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: text;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.modal-content .filter-select:focus,
+.modal-box .filter-select:focus {
+  border-color: #0437f2;
+}
+
+.modal-content .dropdown-arrow,
+.modal-box .dropdown-arrow {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.modal-content .dropdown-list,
+.modal-box .dropdown-list {
+  font-family: "Chillax", sans-serif;
+  font-weight: 500;
+  display: none;
+  position: absolute;
+  width: 100%;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.modal-content .dropdown-item,
+.modal-box .dropdown-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.modal-content .dropdown-item:hover,
+.modal-box .dropdown-item:hover {
+  background-color: #f4f7fe;
+  color: #0437f2;
+}
+
+.modal-content .dropdown-item.no-results,
+.modal-box .dropdown-item.no-results {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.modal-content .dropdown-item.no-results:hover,
+.modal-box .dropdown-item.no-results:hover {
+  background-color: transparent;
+}
+
+/* In database.css */
+
+/* LOADER STYLES */
+
+/* This is for the loader shown when the table is initializing */
+/* In database.css */
+
+/* In database.css */
+.loader-container {
+  flex: 1; /* This is the key change to make it fill the space */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #0437f2;
+  font-family: "Chillax", sans-serif;
+  font-weight: 600;
+}
+/* This is a full-page overlay for navigation */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Ensures it's on top of everything */
+}
+
+/* This is the spinning circle animation */
+.loader-spinner {
+  border: 8px solid #e5ecff; /* Light blue */
+  border-top: 8px solid #0437f2; /* Main theme blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1.2s linear infinite;
+}
+
+.loader-container .loader-spinner {
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Add this new rule */
+.main-content {
+  display: flex;
+  flex-direction: column;
+}

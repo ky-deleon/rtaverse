@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RTAverse</title>
+    <link rel="stylesheet" href="../static/styles.css" />
+    <link rel="stylesheet" href="../static/dashboard.css" />
+    <link rel="stylesheet" href="../static/filter-dashboard.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
+    <script defer src="../static/script.js"></script>
+  </head>
+
+  <body class="rtaverse">
+    <div class="pagesize">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div>
+          <!-- Sidebar Header (Toggle + Title) -->
+          <div class="sidebar-header">
+            <button
+              class="sidebar-toggle"
+              onclick="toggleSidebar()"
+              aria-label="Toggle sidebar"
+            >
+              <svg
+                id="toggle-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#0437F2"
+              >
+                <path
+                  d="M689-365v-230q0-21-19.5-29.5T635-618l-93 93q-19 19-19 45t19 45l93 93q15 15 34.5 6.5T689-365ZM212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h536q53 0 89.5 36.5T874-748v536q0 53-36.5 89.5T748-86H212Zm226-126h310v-536H438v536Z"
+                />
+              </svg>
+            </button>
+            <p class="app-title">RTAVERSE</p>
+          </div>
+
+          <!-- Gradient line -->
+          <div class="gradient-line"></div>
+
+          <!-- Navigation -->
+          <nav class="nav">
+            <a href="{{ url_for('auth.dashboard') }}" class="nav-item active">
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M126-212v-342q0-30 13-56.5t37-44.5l228-171q34-26 76-26t76 26l228 171q24 18 37 44.5t13 56.5v342q0 53-36.5 89.5T708-86h-77q-26 0-44.5-18.5T568-149v-196q0-26-18.5-44.5T505-408h-50q-26 0-44.5 18.5T392-345v196q0 26-18.5 44.5T329-86h-77q-53 0-89.5-36.5T126-212Z"
+                />
+              </svg>
+              <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('views.graphs') }}" class="nav-item">
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M706-126q-26 0-44.5-18.5T643-189v-202q0-26 18.5-44.5T706-454h65q26 0 44.5 18.5T834-391v202q0 26-18.5 44.5T771-126h-65Zm-258 0q-26 0-44.5-18.5T385-189v-582q0-26 18.5-44.5T448-834h64q26 0 44.5 18.5T575-771v582q0 26-18.5 44.5T512-126h-64Zm-259 0q-26 0-44.5-18.5T126-189v-382q0-26 18.5-44.5T189-634h65q26 0 44.5 18.5T317-571v382q0 26-18.5 44.5T254-126h-65Z"
+                />
+              </svg>
+              <span>Graphs</span>
+            </a>
+
+            <a href="{{ url_for('views.database_page') }}" class="nav-item">
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M479-523q165 0 280-52t115-124q0-73-115-124t-280-51q-165 0-279 51T86-699q0 72 114 124t279 52Zm1 88q72 0 142.5-12.5T749-483q56-23 91-55.5t35-72.5v130q0 40-35 72.5T749-353q-56 23-126.5 35.5T480-305q-72 0-142.5-12.5T211-353q-56-23-91-55.5T85-481v-130q0 40 35 72.5t91 55.5q56 23 126.5 35.5T480-435Zm0 218q72 0 142.5-12.5t126.5-36q56-23.5 91-56t35-72.5v131q0 40-35 72.5T749-135q-56 23-126.5 35.5T480-87q-72 0-142.5-12.5T211-135q-56-23-91-55.5T85-263v-131q0 40 35 72.5t91 55.5q56 23 126.5 36T480-217Z"
+                />
+              </svg>
+              <span>Database</span>
+            </a>
+          </nav>
+        </div>
+
+        <a href="#" class="nav-item logout" onclick="openLogoutModal(event)">
+          <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+            <path
+              d="M212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h213q26 0 44.5 18.5T488-811q0 26-18.5 44.5T425-748H212v536h213q26 0 44.5 18.5T488-149q0 26-18.5 44.5T425-86H212Zm423-331H415q-26 0-44.5-18.5T352-480q0-26 18.5-44.5T415-543h220l-52-52q-18-18-18-44t18-44q18-19 43.5-19t44.5 19l159 159q18 19 18 44t-18 44L671-277q-18 19-44 19t-44-19q-18-18-18-44t18-44l52-52Z"
+            />
+          </svg>
+          <span>Logout</span>
+        </a>
+      </aside>
+
+      <main class="main-content">
+        <div class="breadcrumbs">Pages / Dashboard</div>
+        <div class="header">
+          <p class="page-title">Maps</p>
+          <div class="header-controls">
+            <button class="filter-btn" onclick="openFilterModal()">
+              <svg
+                class="filter-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#0437F2"
+              >
+                <path
+                  d="M440-126q-30 0-52-22t-22-52v-228L142-716q-29-37-9-77.5t67-40.5h560q47 0 67 40.5t-9 77.5L594-428v239q0 27-18 45t-45 18h-91Z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {% if forecast_source %}
+        <p style="margin: 6px 0; color: #666">
+          Forecast data source: <strong>{{ forecast_source }}</strong>
+        </p>
+        {% endif %}
+
+        <section class="cards-grid">
+          <div class="card">
+            <div class="card-label">Date</div>
+            <div id="cardDate" class="card-value" data-live="true">
+              {{ current_date|default('—', true) }}
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">Time</div>
+            <div id="cardTime" class="card-value" data-live="true">
+              {{ current_time|default('—', true) }}
+            </div>
+          </div>
+          <div class="card col-span-2">
+            <div class="card-label">Risks (Legend)</div>
+            <div class="legend">
+              <span class="legend-item">
+                <span class="dot green"></span>Low Risk
+                <span class="tooltip-box">
+                  This area has a normal or below-average number of accidents.
+                  Standard traffic monitoring is sufficient.
+                </span>
+              </span>
+              <span class="legend-item">
+                <span class="dot yellow"></span>Moderate Risk
+                <span class="tooltip-box">
+                  This area has more accidents than usual. Increased police
+                  presence and extra attention are recommended.
+                </span>
+              </span>
+              <span class="legend-item">
+                <span class="dot red"></span>High Risk
+                <span class="tooltip-box">
+                  This is one of the most dangerous areas for accidents.
+                  Immediate action, such as deploying traffic teams, is advised.
+                </span>
+              </span>
+              <span class="legend-item">
+                <span class="dot grey"></span>No Accidents
+                <span class="tooltip-box">
+                  No accidents have been recorded or are predicted for this area
+                  during the selected time.
+                </span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <div class="map-wrapper">
+          {% if no_data_html %} {{ no_data_html|safe }} {% else %}
+          <div
+            id="map-endpoint"
+            data-url="{{ url_for('api.folium_map') }}"
+          ></div>
+          <iframe
+            class="map-frame"
+            src="{{ url_for('api.folium_map') }}"
+          ></iframe>
+          {% endif %}
+        </div>
+      </main>
+    </div>
+
+    <div id="logoutModal" class="modal hidden">
+      <div class="modal-content">
+        <p>Are you sure you want to logout?</p>
+        <div class="modal-buttons">
+          <button onclick="confirmLogout()">Yes</button>
+          <button onclick="closeLogoutModal()">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="filterModal" class="filter-modal hidden">
+      <div class="filter-modal-content">
+        <button class="filter-close-btn" onclick="closeFilterModal()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="24px"
+            viewBox="0 -960 960 960"
+            width="24px"
+            fill="#0437F2"
+          >
+            <path
+              d="m291-240-51-51 189-189-189-189 51-51 189 189 189-189 51 51-189 189 189 189-51 51-189-189-189 189Z"
+            />
+          </svg>
+        </button>
+
+        <div class="filter-group">
+          <label for="locationFilter" class="filter-label">Location(s)</label>
+          <div class="filter-dropdown">
+            <!-- This is the container for pills and the input -->
+            <div id="multiSelectContainer" class="multi-select-container">
+              <div id="locationPillsContainer" class="pills-container"></div>
+              <input
+                type="text"
+                id="locationFilter"
+                class="multi-select-input"
+                placeholder="Select or search..."
+                autocomplete="off"
+              />
+            </div>
+            <svg
+              class="dropdown-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#6B7280"
+              stroke-width="2"
+            >
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+            <div id="locationDropdownList" class="dropdown-list"></div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Date</label>
+          <div class="month-range">
+            <input
+              type="month"
+              id="monthFrom"
+              class="filter-date-input"
+              min="2015-01"
+              max="2025-12"
+            />
+            <span class="time-separator">to</span>
+            <input
+              type="month"
+              id="monthTo"
+              class="filter-date-input"
+              min="2015-01"
+              max="2025-12"
+            />
+          </div>
+          <div id="dateError" class="date-error-message hidden">
+            Please choose months between 2015 and 2025. “From” cannot be after
+            “To”.
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Time</label>
+          <div class="time-range">
+            <div class="time-input-group">
+              <input type="time" id="timeFrom" class="time-input" />
+            </div>
+
+            <span class="time-separator">to</span>
+
+            <div class="time-input-group">
+              <input type="time" id="timeTo" class="time-input" />
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button
+            type="button"
+            class="filter-clear-btn"
+            onclick="clearFilters()"
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            class="filter-apply-btn"
+            onclick="applyFilters()"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="../static/script.js"></script>
+    <script src="../static/filter-dashboard.js"></script>
+
+    <script>
+      document
+        .querySelectorAll(
+          '.map-wrapper style, .map-wrapper link[rel="stylesheet"]'
+        )
+        .forEach((node) => {
+          const css = (node.textContent || "").toLowerCase();
+          if (
+            css.includes("html") ||
+            css.includes("body{") ||
+            css.includes("html, body") ||
+            css.includes("body, html")
+          ) {
+            node.remove();
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RTAverse</title>
+    <link rel="stylesheet" href="../static/styles.css" />
+    <link rel="stylesheet" href="../static/database.css" />
+    <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"
+    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script defer src="../static/script.js"></script>
+  </head>
+
+  <body>
+    <div class="pagesize">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div>
+          <!-- Sidebar Header (Toggle + Title) -->
+          <div class="sidebar-header">
+            <button
+              class="sidebar-toggle"
+              onclick="toggleSidebar()"
+              aria-label="Toggle sidebar"
+            >
+              <svg
+                id="toggle-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#0437F2"
+              >
+                <!-- Default: open state -->
+                <path
+                  d="M689-365v-230q0-21-19.5-29.5T635-618l-93 93q-19 19-19 45t19 45l93 93q15 15 34.5 6.5T689-365ZM212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h536q53 0 89.5 36.5T874-748v536q0 53-36.5 89.5T748-86H212Zm226-126h310v-536H438v536Z"
+                />
+              </svg>
+            </button>
+            <p class="app-title">RTAVERSE</p>
+          </div>
+
+          <!-- Gradient line -->
+          <div class="gradient-line"></div>
+
+          <!-- Navigation -->
+          <nav class="nav">
+            <a href="{{ url_for('auth.dashboard') }}" class="nav-item">
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M126-212v-342q0-30 13-56.5t37-44.5l228-171q34-26 76-26t76 26l228 171q24 18 37 44.5t13 56.5v342q0 53-36.5 89.5T708-86h-77q-26 0-44.5-18.5T568-149v-196q0-26-18.5-44.5T505-408h-50q-26 0-44.5 18.5T392-345v196q0 26-18.5 44.5T329-86h-77q-53 0-89.5-36.5T126-212Z"
+                />
+              </svg>
+              <span>Dashboard</span>
+            </a>
+
+            <a href="{{ url_for('views.graphs') }}" class="nav-item">
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M706-126q-26 0-44.5-18.5T643-189v-202q0-26 18.5-44.5T706-454h65q26 0 44.5 18.5T834-391v202q0 26-18.5 44.5T771-126h-65Zm-258 0q-26 0-44.5-18.5T385-189v-582q0-26 18.5-44.5T448-834h64q26 0 44.5 18.5T575-771v582q0 26-18.5 44.5T512-126h-64Zm-259 0q-26 0-44.5-18.5T126-189v-382q0-26 18.5-44.5T189-634h65q26 0 44.5 18.5T317-571v382q0 26-18.5 44.5T254-126h-65Z"
+                />
+              </svg>
+              <span>Graphs</span>
+            </a>
+
+            <a
+              href="{{ url_for('views.database_page') }}"
+              class="nav-item active"
+            >
+              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+                <path
+                  d="M479-523q165 0 280-52t115-124q0-73-115-124t-280-51q-165 0-279 51T86-699q0 72 114 124t279 52Zm1 88q72 0 142.5-12.5T749-483q56-23 91-55.5t35-72.5v130q0 40-35 72.5T749-353q-56 23-126.5 35.5T480-305q-72 0-142.5-12.5T211-353q-56-23-91-55.5T85-481v-130q0 40 35 72.5t91 55.5q56 23 126.5 35.5T480-435Zm0 218q72 0 142.5-12.5t126.5-36q56-23.5 91-56t35-72.5v131q0 40-35 72.5T749-135q-56 23-126.5 35.5T480-87q-72 0-142.5-12.5T211-135q-56-23-91-55.5T85-263v-131q0 40 35 72.5t91 55.5q56 23 126.5 36T480-217Z"
+                />
+              </svg>
+              <span>Database</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Logout -->
+        <a href="#" class="nav-item logout" onclick="openLogoutModal(event)">
+          <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+            <path
+              d="M212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h213q26 0 44.5 18.5T488-811q0 26-18.5 44.5T425-748H212v536h213q26 0 44.5 18.5T488-149q0 26-18.5 44.5T425-86H212Zm423-331H415q-26 0-44.5-18.5T352-480q0-26 18.5-44.5T415-543h220l-52-52q-18-18-18-44t18-44q18-19 43.5-19t44.5 19l159 159q18 19 18 44t-18 44L671-277q-18 19-44 19t-44-19q-18-18-18-44t18-44l52-52Z"
+            />
+          </svg>
+          <span>Logout</span>
+        </a>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="breadcrumbs" style="display: none">Pages / Database</div>
+
+        <div class="header" style="display: none">
+          <p class="page-title">Database</p>
+
+          {% if table_data %}
+          <div class="header-database-controls">
+            <div class="search-box">
+              <svg
+                class="search-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -960 960 960"
+                width="20px"
+                fill="#0437F2"
+              >
+                <path
+                  d="M380-320q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l224 224q11 11 11 28t-11 28q-11 11-28 11t-28-11L532-372q-30 24-69 38t-83 14Zm0-80q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"
+                />
+              </svg>
+              <input
+                type="text"
+                id="customSearch"
+                placeholder="Search database..."
+              />
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <!-- End of Header -->
+
+        {% if table_data %}
+        <div class="upload-header" style="display: none">
+          <h3 id="currentYearDisplay"></h3>
+          <div class="upload-controls">
+            <!-- Left side buttons -->
+            <div class="left-buttons">
+              <div class="dropdown-container">
+                <button id="exportBtn" class="edit-table-btn">Export</button>
+                <div id="exportMenu" class="dropdown-content">
+                  <a href="#" id="exportCsvBtn">Save as CSV</a>
+                  <a href="#" id="exportXlsxBtn">Save as Excel</a>
+                  <a href="#" id="exportPdfBtn">Save as PDF</a>
+                </div>
+              </div>
+              <button id="editTableBtn" class="edit-table-btn">
+                Edit Table
+              </button>
+              <button
+                id="undoBtn"
+                class="edit-table-btn"
+                style="display: none; background-color: #ffc107"
+              >
+                Undo
+              </button>
+              <button
+                id="redoBtn"
+                class="edit-table-btn"
+                style="display: none; background-color: #17a2b8"
+              >
+                Redo
+              </button>
+              <button
+                id="cancelEditBtn"
+                class="edit-table-btn"
+                style="display: none; background-color: #6c757d"
+              >
+                Cancel Editing
+              </button>
+              <button id="saveTableBtn" class="save-btn" style="display: none">
+                Save Table
+              </button>
+              <button id="deleteSelectedBtn" class="delete-btn">
+                Delete Selected
+              </button>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- File Selection -->
+        {% if not table_data %}
+        <div class="file-selection-container">
+          <div class="file-header">
+            <div>
+              <h2>Excel Files</h2>
+              <p class="file-description">
+                Select the file that you want to display in the Dashboard and
+                Graphs page.
+              </p>
+            </div>
+            <!-- Upload button -->
+            <form
+              method="POST"
+              enctype="multipart/form-data"
+              class="upload-form"
+              id="uploadForm"
+            >
+              <input
+                type="file"
+                id="hiddenFileInput"
+                name="file"
+                accept=".csv, .xlsx"
+                style="display: none"
+                required
+              />
+              <button type="button" class="upload-btn" id="triggerFileUpload">
+                Upload
+              </button>
+            </form>
+          </div>
+
+          {% if not available_tables %}
+          <div class="no-data">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="80"
+              height="80"
+              fill="#0437F2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2C6.486 2 2 6.49 2 12c0 5.51 4.486 10 10 10
+             s10-4.49 10-10C22 6.49 17.514 2 12 2zm0 15h-1v-6h2v6h-1zm0-8
+             c-.552 0-1-.447-1-1s.448-1 1-1c.553 0 1 .447 1 1s-.447 1-1 1z"
+              />
+            </svg>
+            <p>
+              No data available in the database.<br />Upload a file to get
+              started.
+            </p>
+          </div>
+          {% endif %}
+
+          <div class="file-grid-centered">
+            {% for table in available_tables %}
+            <div class="file-card-big" onclick="selectFile('{{ table }}')">
+              <svg
+                class="file-icon-big"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H15a1 1 0 0 1-1-1z"
+                />
+              </svg>
+              <p>{{ table }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Table view (only shows if a table was selected) -->
+        {% if table_data %}
+        <div id="tableLoader" class="loader-container">
+          <div class="loader-spinner"></div>
+          <p>Initializing table, please wait...</p>
+        </div>
+
+        <div id="tableViewWrapper" class="hidden">
+          <div id="tableView" class="table-container">
+            {{ table_data | safe }}
+          </div>
+        </div>
+        {% endif %}
+      </main>
+    </div>
+
+    <!-- Delete File Modal -->
+    <div id="deleteFileModal" class="modal hidden">
+      <div class="modal-content">
+        <p id="deleteFileMessage">Are you sure you want to delete this file?</p>
+        <div class="modal-buttons">
+          <button onclick="confirmDeleteFile()">Yes</button>
+          <button onclick="closeDeleteFileModal()">No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal hidden">
+      <div class="modal-overlay" onclick="closeUploadModal()"></div>
+      <div class="modal-box">
+        <button class="close-btn" onclick="closeUploadModal()">×</button>
+
+        <label for="fileNameInput" class="modal-label">File Name</label>
+        <input
+          id="fileNameInput"
+          type="text"
+          placeholder="Enter file name"
+          class="modal-input"
+        />
+
+        <p class="modal-label">Upload Files</p>
+        <div class="upload-grid">
+          <div class="upload-slot" onclick="triggerHiddenInput(1)">
+            <span class="plus-icon">+</span>
+            <p class="file-placeholder">Choose file to upload.</p>
+            <!-- Hidden until file is picked -->
+            <svg
+              class="file-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H15a1 1 0 0 1-1-1z"
+              />
+            </svg>
+            <p class="file-name"></p>
+
+            <input type="file" id="fileInput1" style="display: none" />
+          </div>
+          <div class="upload-slot" onclick="triggerHiddenInput(2)">
+            <span class="plus-icon">+</span>
+            <p class="file-placeholder">Choose file to upload.</p>
+            <!-- Hidden until file is picked -->
+            <svg
+              class="file-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 9V3.5L18.5 8H15a1 1 0 0 1-1-1z"
+              />
+            </svg>
+            <p class="file-name"></p>
+            <input type="file" id="fileInput2" style="display: none" />
+          </div>
+        </div>
+
+        <!-- Append option -->
+        <label
+          class="checkbox-text-style"
+          style="
+            margin-top: 12px;
+            color: #1e1e1e;
+            display: block;
+            font-size: 14px;
+            margin-bottom: 20px;
+          "
+        >
+          <input type="checkbox" id="appendToggle" />
+          Append to existing processed table
+        </label>
+
+        <div id="appendTargetWrap" class="hidden" style="margin-top: 15px">
+          <label for="appendTarget" class="modal-label"
+            >Choose target table</label
+          >
+
+          <div class="filter-dropdown" style="margin-top: 8px">
+            <input
+              type="text"
+              id="appendTarget"
+              class="filter-select"
+              placeholder="Select or search target table"
+              autocomplete="off"
+            />
+            <svg
+              class="dropdown-arrow"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#6B7280"
+              stroke-width="2"
+            >
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+            <div id="appendUploadDropdownList" class="dropdown-list"></div>
+          </div>
+        </div>
+
+        <button class="done-btn" onclick="submitUpload()">Done</button>
+      </div>
+    </div>
+
+    <!-- Processing Progress Modal -->
+    <div id="progressModal" class="modal hidden">
+      <div class="modal-overlay" onclick="closeProgressModal()"></div>
+      <div class="modal-box" style="max-width: 720px">
+        <button class="close-btn" onclick="closeProgressModal()">×</button>
+
+        <h3 class="title">Processing your files</h3>
+        <p class="subtitle">Merging → Preprocessing → Completed</p>
+
+        <div class="pb-wrapper">
+          <div class="pb-rail">
+            <div class="pb-fill" id="pbFill" style="width: 0%">
+              <span class="pb-badge" id="pbBadge">0%</span>
+            </div>
+
+            <!-- step dots -->
+            <div class="pb-steps">
+              <div class="pb-step" id="dot-merge">
+                <span></span><small>Merging</small>
+              </div>
+              <div class="pb-step" id="dot-preprocess">
+                <span></span><small>Preprocessing</small>
+              </div>
+              <div class="pb-step" id="dot-complete">
+                <span></span><small>Completed</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="pb-actions">
+            <button id="pbActionBtn" class="primary" disabled>
+              Save Progress
+            </button>
+          </div>
+        </div>
+
+        <div id="pbNote" class="note">Please keep this window open.</div>
+      </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="modal hidden">
+      <div class="modal-content">
+        <p>Are you sure you want to logout?</p>
+        <div class="modal-buttons">
+          <button onclick="confirmLogout()">Yes</button>
+          <button onclick="closeLogoutModal()">No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Right Click Menu -->
+    <ul id="fileContextMenu" class="context-menu hidden">
+      <li onclick="editFile()">Edit/View File</li>
+      <li onclick="deleteFile()">Delete File</li>
+      <li onclick="appendFile()">Append to another table</li>
+      <li onclick="useForForecast()">Use for Forecast Map</li>
+    </ul>
+
+    <div id="appendFileModal" class="modal hidden">
+      <div class="modal-content">
+        <p>
+          Append '<strong><span id="sourceFileName"></span></strong>' to which
+          table?
+        </p>
+        <!-- START: New Searchable Dropdown Structure -->
+        <div class="filter-dropdown" style="margin-top: 10px">
+          <input
+            type="text"
+            id="appendTargetTable"
+            class="filter-select"
+            placeholder="Select or search target table"
+            autocomplete="off"
+          />
+          <svg
+            class="dropdown-arrow"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6B7280"
+            stroke-width="2"
+          >
+            <polyline points="6,9 12,15 18,9"></polyline>
+          </svg>
+          <div id="appendDropdownList" class="dropdown-list"></div>
+        </div>
+        <!-- END: New Searchable Dropdown Structure -->
+        <label
+          style="
+            color: #1e1e1e;
+            display: block;
+            font-size: 14px;
+            margin-top: 10px;
+            margin-bottom: 30px;
+          "
+        >
+          <input type="checkbox" id="deleteSourceAfterAppend" /> Delete original
+          file after appending
+        </label>
+        <div class="modal-buttons">
+          <button onclick="confirmAppendFile()">Confirm</button>
+          <button onclick="closeAppendFileModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pageLoader" class="loader-overlay hidden">
+      <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="../static/database.js"></script>
+  </body>
+</html>

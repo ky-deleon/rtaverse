@@ -1,0 +1,399 @@
+/* Filter Modal */
+.filter-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.filter-modal.hidden {
+  display: none;
+}
+
+.filter-modal-content {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 25px;
+  width: 400px; /* wider modal */
+  max-width: 95vw; /* still responsive */
+  font-family: "Chillax", sans-serif;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: filterModalSlideIn 0.3s ease-out;
+}
+
+/* Red border when invalid */
+.filter-date-input.error {
+  border-color: #ef4444 !important; /* Red */
+  background-color: #fff5f5;
+}
+
+/* Error message below input */
+.date-error-message {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 6px;
+  padding-left: 5px;
+  font-weight: 500;
+}
+
+.date-error-message.hidden {
+  display: none;
+}
+
+@keyframes filterModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Close Button */
+.filter-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.filter-close-btn:hover {
+  background: #f4f7fe;
+}
+
+/* Filter Groups */
+.filter-group {
+  margin-bottom: 25px;
+}
+
+.filter-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0437f2;
+  margin-bottom: 12px;
+}
+
+/* Dropdown Styling */
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 15px 45px 15px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:focus {
+  border-color: #0437f2;
+}
+
+.filter-select option {
+  padding: 10px;
+}
+
+.dropdown-arrow {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Date Input */
+.filter-date-input {
+  width: 100%;
+  padding: 15px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.filter-date-input:focus {
+  border-color: #0437f2;
+}
+
+/* Style the calendar icon to blue */
+.filter-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(20%) sepia(100%) saturate(5000%) hue-rotate(230deg)
+    brightness(100%) contrast(100%);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.filter-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: invert(15%) sepia(100%) saturate(6000%) hue-rotate(230deg)
+    brightness(90%) contrast(110%);
+  background-color: rgba(4, 55, 242, 0.1);
+}
+
+/* Firefox calendar icon styling */
+.filter-date-input::-moz-calendar-picker-indicator {
+  filter: invert(20%) sepia(100%) saturate(5000%) hue-rotate(230deg)
+    brightness(100%) contrast(100%);
+  cursor: pointer;
+}
+
+/* Time Range */
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.time-input-group {
+  flex: 1;
+}
+
+.time-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.time-input:focus {
+  border-color: #0437f2;
+}
+
+.time-separator {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Apply Button */
+.filter-apply-btn {
+  width: 100%;
+  padding: 15px;
+  background: #0437f2;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-top: 10px;
+}
+
+.filter-apply-btn:hover {
+  background: #0429d1;
+}
+
+.filter-apply-btn:active {
+  transform: translateY(1px);
+}
+
+/* Actions row */
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Override the old full-width apply style when in actions row */
+.filter-actions .filter-apply-btn {
+  width: auto; /* override any 100% width */
+  flex: 1;
+}
+
+/* Clear button (soft gray) */
+.filter-clear-btn {
+  flex: 1;
+  width: auto;
+  padding: 15px;
+  border: none;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f1f5f9; /* light gray */
+  color: #374151; /* dark gray text */
+  transition: background 0.2s ease;
+  margin-top: 10px;
+}
+
+.filter-clear-btn:hover {
+  background: #e5e7eb; /* a bit darker on hover */
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .filter-modal-content {
+    width: 320px;
+    padding: 30px 25px;
+  }
+
+  .time-range {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .time-separator {
+    transform: rotate(90deg);
+    margin: -5px 0;
+  }
+}
+
+/* Additional styles for searchable location dropdown */
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 15px 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f4f7fe;
+  color: #0437f2;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+  border-radius: 0 0 13px 13px;
+}
+
+.dropdown-item.no-results {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.dropdown-item.no-results:hover {
+  background-color: transparent;
+  color: #9ca3af;
+}
+
+/* Update filter-select to work as input */
+.filter-select {
+  width: 100%;
+  padding: 15px 45px 15px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: text;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar for dropdown */
+.dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 0 3px 3px 0;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Month range layout mirrors time range */
+.month-range {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: auto;
+}
+.month-input-group {
+  flex: 1;
+}
+.filter-date-input {
+  width: auto;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.month-range,
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.month-range .filter-date-input,
+.time-range .time-input {
+  flex: 1; /* both inputs take equal space */
+}

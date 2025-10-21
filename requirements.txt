@@ -1,0 +1,14 @@
+Flask>=3.0
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+xgboost>=2.0
+folium>=0.17
+mysql-connector-python>=9.0.0
+SQLAlchemy>=2.0
+openpyxl>=3.1        # for reading .xlsx uploads
+pytz>=2024.1         # used for "Live" Manila time
+MarkupSafe>=2.1
+python-dotenv>=1.0   # For loading .env file
+bcrypt>=4.0          # For password hashing (good practice)
+gunicorn>=21.2       # For deployment

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RTAverse</title>
+    <link rel="stylesheet" href="../static/login.css" />
+    <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
+  </head>
+  <body class="login-page">
+    <!-- Login Card -->
+    <div class="login-container">
+      <div class="login-header">
+        <img src="../static/logo.png" alt="RTAVERSE Logo" class="login-logo" />
+
+        <h1 class="login-title">
+          LOGIN TO <span class="rtaverse-text">RTAVERSE</span>
+        </h1>
+      </div>
+
+      <form action="{{ url_for('auth.dashboard') }}" method="POST">
+        <!-- Username -->
+        <div class="form-group">
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="22px"
+                viewBox="0 -960 960 960"
+                width="22px"
+                fill="#0437F2"
+              >
+                <path
+                  d="M480.11-415q60.39 0 102.14-41.86T624-559.11q0-60.39-41.86-101.64T479.89-702q-60.39 0-102.14 41.36T336-558.89q0 60.39 41.86 102.14T480.11-415ZM216-95q-50.94 0-85.97-35.03T95-216v-528q0-50.94 35.03-85.97T216-865h528q50.94 0 85.97 35.03T865-744v528q0 50.94-35.03 85.97T744-95H216Zm0-121h528v-66q-53.31-47.07-117.91-71.54Q561.5-378 480-378t-146.09 25.46Q269.31-327.07 216-280v64Z"
+                />
+              </svg>
+            </span>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Email Address"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="24px"
+                viewBox="0 -960 960 960"
+                width="24px"
+                fill="#0437F2"
+              >
+                <path
+                  d="M256-59q-49.91 0-85.46-35.54Q135-130.09 135-180v-370q0-49.91 35.54-85.46Q206.09-671 256-671h16v-48.79q0-88.71 60.25-149.96Q392.5-931 480-931t147.75 61.25Q688-808.5 688-719.79V-671h16q49.91 0 85.46 35.54Q825-599.91 825-550v370q0 49.91-35.54 85.46Q753.91-59 704-59H256Zm224-229q31.76 0 54.38-22.62T557-365q0-31.76-22.62-54.38T480-442q-31.76 0-54.38 22.62T403-365q0 31.76 22.62 54.38T480-288Zm-87-383h174v-49.15q0-37.18-24.88-63.52-24.88-26.33-62-26.33Q443-810 418-783.75T393-720v49Z"
+                />
+              </svg>
+            </span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Password"
+              required
+            />
+            <!-- Toggle Password -->
+            <span class="toggle-password" onclick="togglePassword()">
+              <svg
+                id="showIcon"
+                xmlns="http://www.w3.org/2000/svg"
+                height="20px"
+                viewBox="0 -960 960 960"
+                width="20px"
+                fill="#666"
+              >
+                <path
+                  d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"
+                />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <p class="forgot-password">Forgot Password? Contact Admin.</p>
+
+        <button type="submit" class="login-button">Login Now</button>
+      </form>
+    </div>
+
+    <script>
+      function togglePassword() {
+        const passwordInput = document.getElementById("password");
+        const icon = document.getElementById("showIcon");
+
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          icon.innerHTML = `<path d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 59-60.5 109.5T772-302Zm20 246L624-222q-35 11-70.5 16.5T480-200q-151 0-269-83.5T40-500q21-53 53-98.5t73-81.5L56-792q-11-11-11-28t11-28q11-11 28-11t28 11l736 736q11 11 11 28t-11 28q-11 11-28 11t-28-11ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T300-500q0-11 1.5-21t4.5-21l-84-82Zm319 93Zm-151 75Z"/>`;
+        } else {
+          passwordInput.type = "password";
+          icon.innerHTML = `<path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>`;
+        }
+      }
+    </script>
+  </body>
+</html>

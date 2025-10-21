@@ -1,0 +1,22 @@
+.env
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Instance folder (if you use one for secrets)
+instance/
+
+# OS-specific files
+.DS_Store

@@ -1,0 +1,31 @@
+# render.yaml - Configuration for deploying the RTAverse Flask application on Render.
+
+services:
+  # A web service for the main Flask application.
+  - type: web
+    name: rtaverse
+    env: python
+    plan: free # Use the free instance type.
+
+    # The command to install all dependencies from your requirements.txt file.
+    # This runs every time you push a new commit.
+    buildCommand: "pip install -r requirements.txt"
+
+    # The command to start the Gunicorn production server.
+    # This assumes your Flask app instance is named 'app' inside your 'run.py' file.
+    # We bind to 0.0.0.0 and use the $PORT environment variable provided by Render.
+    startCommand: "gunicorn --workers 4 --bind 0.0.0.0:$PORT run:app"
+
+    # Define environment variables here.
+    # For security, 'sync: false' means you must set the actual values
+    # in the Render dashboard under your service's 'Environment' tab.
+    # This prevents secrets from being stored in your code repository.
+    envVars:
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        sync: false # Set your secret key in the Render dashboard.
+      - key: DATABASE_URL # Example for a database connection string.
+        sync: false # Set your database URL in the Render dashboard.

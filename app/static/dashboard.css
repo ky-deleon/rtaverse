@@ -1,0 +1,49 @@
+.legend {
+  display: flex;
+  gap: 50px;
+  align-items: left;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e1e1e;
+}
+
+.dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50px;
+  margin-right: 10px;
+  display: inline-block;
+}
+
+.green {
+  background-color: #4ade80;
+}
+.yellow {
+  background-color: #fde047;
+}
+.red {
+  background-color: #f87171;
+}
+
+/* Find this existing rule (around line 26) */
+.map-wrapper {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+
+  /* ADD THESE TWO LINES */
+  flex-grow: 1;
+  display: flex;
+}
+/* Find this existing rule (around line 32) */
+.map-frame {
+  width: 100%;
+  /* CHANGE THIS LINE */
+  height: 100%;
+
+  border: 0;
+  border-radius: 12px;
+  display: block;
+}
