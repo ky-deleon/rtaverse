@@ -4,7 +4,8 @@ from datetime import datetime
 from xgboost import XGBRegressor
 from sklearn.ensemble import RandomForestRegressor
 from .database import list_tables
-from ..extensions import get_engine   # ⬅ use engine for pandasz
+from ..extensions import get_engine   # ⬅ use engine for pandas
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score, mean_squared_error
 
 # === 1) RF monthly API (from your /api/rf_monthly_forecast) ===
 def rf_monthly_payload(table: str):
@@ -40,6 +41,24 @@ def rf_monthly_payload(table: str):
 
     rf = RandomForestRegressor(n_estimators=100, random_state=42, min_samples_leaf=2)
     rf.fit(X_full, y_full)
+
+    # --- METRICS CALCULATION (WITH MAPE SAFEGUARD) ---
+    print("\n--- RF Monthly Forecast Model Performance ---")
+    y_pred_full = rf.predict(X_full)
+    mae = mean_absolute_error(y_full, y_pred_full)
+    
+    # Calculate MAPE only for non-zero actuals to avoid distortion
+    non_zero_mask = y_full > 0
+    mape = mean_absolute_percentage_error(y_full[non_zero_mask], y_pred_full[non_zero_mask]) * 100 if np.any(non_zero_mask) else 0.0
+
+    r2 = r2_score(y_full, y_pred_full)
+    rmse = np.sqrt(mean_squared_error(y_full, y_pred_full))
+
+    print(f"Mean Absolute Error (MAE): {mae:.2f}")
+    print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+    print(f"R-squared (R2): {r2:.2f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.2f}\n")
+
 
     months_to_forecast = 12
     last_idx = ts.index.max()
@@ -91,7 +110,6 @@ def rf_monthly_payload(table: str):
         "forecast": forecast_by_month,
     }
     return {"success": True, "data": payload}
-
 
 # === 2) Folium map builder (from your _build_forecast_map_html) ===
 # In forecasting.py, replace the entire function
@@ -229,6 +247,21 @@ def build_forecast_map_html(
         random_state=42
     )
     final_model.fit(X_full, y_full, verbose=False)
+
+    # --- METRICS CALCULATION ---
+    print("\n--- XGBoost Hotspot Model Performance ---")
+    y_pred_full = final_model.predict(X_full)
+    mae = mean_absolute_error(y_full, y_pred_full)
+    # Avoid division by zero for MAPE by filtering out zero values in y_full
+    mape = mean_absolute_percentage_error(y_full[y_full > 0], y_pred_full[y_full > 0]) * 100 if np.any(y_full > 0) else 0.0
+    r2 = r2_score(y_full, y_pred_full)
+    rmse = np.sqrt(mean_squared_error(y_full, y_pred_full))
+
+    print(f"Mean Absolute Error (MAE): {mae:.2f}")
+    print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+    print(f"R-squared (R2): {r2:.2f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.2f}\n")
+
 
     last_known_month = ts_data['DATE_COMMITTED'].max()
 
