@@ -200,7 +200,6 @@ function showNoData(elId, msg) {
       <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="#4D8DFF" viewBox="0 0 24 24">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
       </svg>
-      {/* 2. This line is fixed to use displayMessage */}
       <p>${displayMessage}</p>
     </div>`;
 
@@ -258,7 +257,7 @@ async function loadHourlyChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Hourly Forecast (${capFirst(
+        titleEl.textContent = `Accident by Hour of Day (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
       renderForecastGroupedBarChart(
@@ -400,7 +399,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Severity & Count Forecast (${capFirst(
+        titleEl.textContent = `Accidents and Severity by Day of Week (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
       const {
@@ -566,7 +565,7 @@ async function loadTopBarangaysChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Top 10 Barangay Forecast (${capFirst(
+        titleEl.textContent = `Top 10 Barangays by Accident Count (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
 
@@ -691,7 +690,7 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Forecasted Alcohol Involvement (${capFirst(
+        titleEl.textContent = `Proportion of Alcohol Involvement by Hour (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
       const { hours, forecast_yes_pct, forecast_no_pct, forecast_unknown_pct } =
@@ -831,7 +830,7 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Victims by Age Forecast (${capFirst(
+        titleEl.textContent = `Total Victims by Age (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
       renderForecastGroupedBarChart(
@@ -924,7 +923,7 @@ async function loadOffenseTypeChart(filters = currentFilters) {
 
     if (isForecastMode) {
       if (titleEl)
-        titleEl.textContent = `Offense Type Forecast (${capFirst(
+        titleEl.textContent = `Accidents by Offense Type (${capFirst(
           j.data.model_used
         )}, ${j.data.horizon} mo)`;
       renderForecastGroupedBarChart(
