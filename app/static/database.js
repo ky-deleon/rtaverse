@@ -206,6 +206,7 @@ $(document).ready(function () {
     });
 
     // --- Event listener for CSV Export ---
+    // --- Event listener for CSV Export ---
     $("#exportCsvBtn").on("click", function (e) {
       e.preventDefault();
       const exportData = getCurrentTableDataForExport();
@@ -214,25 +215,36 @@ $(document).ready(function () {
         return;
       }
 
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += exportData.headers.join(",") + "\r\n"; // Add headers
+      // --- FIX: Build CSV data separately ---
+      let csvRows = [];
 
+      // Add headers
+      csvRows.push(exportData.headers.join(","));
+
+      // Add data rows
       exportData.dataAsArrays.forEach(function (rowArray) {
-        // Handle commas within data by wrapping fields in double quotes
+        // Handle commas/quotes within data by wrapping fields in double quotes
         let row = rowArray
           .map((item) => `"${String(item).replace(/"/g, '""')}"`)
           .join(",");
-        csvContent += row + "\r\n";
+        csvRows.push(row);
       });
 
-      const encodedUri = encodeURI(csvContent);
+      // Join all rows with newline characters
+      let csvString = csvRows.join("\r\n");
+
+      // Use encodeURIComponent on the data ONLY, then add the prefix
+      const encodedUri =
+        "data:text/csv;charset=utf-8," + encodeURIComponent(csvString);
+      // --- END FIX ---
+
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
       const tableName =
         new URLSearchParams(window.location.search).get("table") || "data";
       link.setAttribute("download", `${tableName}.csv`);
       document.body.appendChild(link);
-      link.click(); // This will download the data file
+      link.click();
       document.body.removeChild(link);
       $("#exportMenu").removeClass("show");
     });

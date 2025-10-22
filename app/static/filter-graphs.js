@@ -197,7 +197,7 @@ function showNoData(elId, msg) {
 
   host.innerHTML = `
     <div class="no-data-message">
-      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="#0437F2" viewBox="0 0 24 24">
+      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="#4D8DFF" viewBox="0 0 24 24">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
       </svg>
       {/* 2. This line is fixed to use displayMessage */}
@@ -336,7 +336,7 @@ function renderForecastGroupedBarChart(elementId, data, xTitle, yTitle) {
     y: forecast,
     type: "bar",
     name: "Forecast", // CHANGED from `Forecast (${horizon} mo)`
-    marker: { color: "#0437F2" },
+    marker: { color: "#4D8DFF" },
   };
 
   // Revert to the original, simpler layout.
@@ -417,7 +417,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
         y: historical_counts,
         type: "bar",
         name: "Acc (Hist)", // Shortened Label
-        marker: { color: "#4D8DFF" },
+        marker: { color: "grey" },
       };
       const traceFcstCount = {
         x: labels,
@@ -589,7 +589,7 @@ async function loadTopBarangaysChart(filters = currentFilters) {
         type: "bar",
         name: "Historical", // Shortened Label
         orientation: "h",
-        marker: { color: "#4D8DFF" },
+        marker: { color: "grey" },
       };
       const traceFcst = {
         y: sortedLabels,
