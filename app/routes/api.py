@@ -542,112 +542,36 @@ from dateutil.relativedelta import relativedelta # You may need to run: pip inst
 
 # --- In api.py, replace the whole function with this ---
 
+# In app/routes/api.py
+
 @api_bp.route("/folium_map")
 def folium_map():
+    # This route now ONLY gathers filter parameters and passes them on.
+    # All data loading and filtering logic is now handled inside build_forecast_map_html.
+    
     table = session.get('forecast_table', 'accidents')
     if table not in list_tables():
-        return Response("<h4>No data: table not found.</h4>", mimetype='text/html')
+        # Return a simple HTML response for "table not found"
+        return Response("<h4>No data: The selected table was not found.</h4>", mimetype='text/html')
         
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True) 
-
-        cur.execute(f"SHOW COLUMNS FROM `{table}`")
-        cols = [str(r['Field']) for r in cur.fetchall()]
-        
         q = request.args
-        where_clauses = []
-        params = {}
-
-        # 1. Handle Time Range Filter (This is correct)
-        time_from = q.get("time_from")
-        time_to = q.get("time_to")
-
-        if time_from and time_to and "HOUR_COMMITTED" in cols:
-            try:
-                h_from = int(time_from.split(':')[0])
-                h_to = int(time_to.split(':')[0])
-                
-                if h_from <= h_to:
-                    where_clauses.append("`HOUR_COMMITTED` BETWEEN %(h_from)s AND %(h_to)s")
-                else: 
-                    where_clauses.append("(`HOUR_COMMITTED` >= %(h_from)s OR `HOUR_COMMITTED` <= %(h_to)s)")
-                
-                params["h_from"] = h_from
-                params["h_to"] = h_to
-            except (ValueError, IndexError):
-                print(f"Warning: Invalid time format received. From: '{time_from}', To: '{time_to}'")
-
-        # 2. Handle Barangay Filter (This is correct)
-        barangay_str = q.get("barangay")
-        if barangay_str:
-            brgy_col = next((c for c in ["BARANGAY", "Barangay", "BRGY"] if c in cols), None)
-            if brgy_col:
-                hotspot_where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-                hotspot_params = params.copy()
-                
-                # Split the string of barangays into a list
-                barangays = [b.strip() for b in barangay_str.split(',') if b.strip()]
-                
-                if barangays:
-                    # Create named placeholders for the IN clause
-                    brgy_placeholders = [f"%(brgy_{i})s" for i in range(len(barangays))]
-                    for i, brgy in enumerate(barangays):
-                        hotspot_params[f"brgy_{i}"] = brgy
-
-                    # Build the IN clause
-                    brgy_in_clause = f"`{brgy_col}` IN ({', '.join(brgy_placeholders)})"
-                    
-                    if hotspot_where_sql:
-                        hotspot_where_sql += f" AND {brgy_in_clause}"
-                    else:
-                        hotspot_where_sql = f"WHERE {brgy_in_clause}"
-
-                    hotspot_query = f"SELECT DISTINCT `ACCIDENT_HOTSPOT` FROM `{table}` {hotspot_where_sql}"
-                    cur.execute(hotspot_query, hotspot_params)
-                    hotspot_ids = [row['ACCIDENT_HOTSPOT'] for row in cur.fetchall() if row['ACCIDENT_HOTSPOT'] is not None]
-
-                    if not hotspot_ids:
-                        m = folium.Map(location=[14.581, 121.0], zoom_start=11)
-                        return m.get_root().render()
-
-                    hotspot_placeholders = ', '.join([f'%(hotspot_{i})s' for i in range(len(hotspot_ids))])
-                    for i, hotspot_id in enumerate(hotspot_ids):
-                        params[f'hotspot_{i}'] = hotspot_id
-                    
-                    where_clauses.append(f"`ACCIDENT_HOTSPOT` IN ({hotspot_placeholders})")
-
-        # 3. Assemble the final query (now without date filters)
-        final_where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
-        # 4. Get filter strings to pass to the map builder
-        start_str = q.get("start")
-        end_str = q.get("end")
-        time_from_str = q.get("time_from")
-        time_to_str = q.get("time_to")
-        barangay_filter_str = q.get("barangay")
-
-        # 5. Call the map builder, passing the unfiltered SQL and all necessary filter strings
+        # Pass all filter parameters directly to the forecasting function
         html = build_forecast_map_html(
             table=table,
-            where_sql=final_where_sql,
-            params=params,
-            start_str=start_str,
-            end_str=end_str,
-            time_from=time_from_str,
-            time_to=time_to_str,
-            legacy_time="", 
-            barangay_filter=barangay_filter_str
+            start_str=q.get("start"),
+            end_str=q.get("end"),
+            time_from=q.get("time_from"),
+            time_to=q.get("time_to"),
+            legacy_time=q.get("legacy_time", "Live"), # Default to "Live" if not provided
+            barangay_filter=q.get("barangay")
         )
         return Response(html, mimetype='text/html')
 
     except Exception as e:
         traceback.print_exc()
-        return Response(f"<h4>Error generating map.</h4><pre>{e}</pre>", mimetype='text/html')
-    finally:
-        if 'cur' in locals() and cur: cur.close()
-        if 'conn' in locals() and conn and conn.is_connected(): conn.close()
-
+        return Response(f"<h4>An unexpected error occurred while generating the map.</h4><pre>{e}</pre>", mimetype='text/html')
 
 # In api.py
 
