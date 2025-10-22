@@ -175,6 +175,7 @@ function formatFiltersForPDF() {
 // === CHART LOADING & RENDERING (REVISED)
 // ==========================================
 
+// Find this function (around line 348)
 function showNoData(elId, msg) {
   const host = document.getElementById(elId);
   if (!host) return;
@@ -184,20 +185,27 @@ function showNoData(elId, msg) {
   } catch (e) {
     // Ignore if no chart exists
   }
+
+  // --- START OF CHANGES ---
+
   let displayMessage = msg || "No data available.";
   if (typeof msg === "string" && msg.includes("NO_TABLE")) {
+    // 1. This text is now updated
     displayMessage =
-      "No data table found. Please go to the Database page to upload a dataset.";
+      "No data found to display graphs. Please upload a dataset to begin.";
   }
+
   host.innerHTML = `
     <div class="no-data-message">
       <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="#0437F2" viewBox="0 0 24 24">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
       </svg>
-      <p>${msg || "No data available."}</p>
+      {/* 2. This line is fixed to use displayMessage */}
+      <p>${displayMessage}</p>
     </div>`;
-}
 
+  // --- END OF CHANGES ---
+}
 function capFirst(s) {
   return s;
 }

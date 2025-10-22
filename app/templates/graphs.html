@@ -78,6 +78,7 @@
         <div class="breadcrumbs">Pages / Graphs</div>
         <div class="header">
           <p class="page-title">Data Visualizations</p>
+          {% if not no_data_html %}
           <div class="header-controls">
             <button id="downloadPdfBtn" class="header-action-btn">
               Download as PDF
@@ -97,6 +98,7 @@
               </svg>
             </button>
           </div>
+          {% endif %}
         </div>
 
         {% if no_data_html %} {{ no_data_html|safe }} {% else %}

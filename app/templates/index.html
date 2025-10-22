@@ -87,8 +87,9 @@
       <main class="main-content">
         <div class="breadcrumbs">Pages / Dashboard</div>
         <div class="header">
-          <p class="page-title">Maps</p>
+          <p class="page-title">Map</p>
           <div class="header-controls">
+            {% if not no_data_html %}
             <button class="filter-btn" onclick="openFilterModal()">
               <svg
                 class="filter-icon"
@@ -103,10 +104,11 @@
                 />
               </svg>
             </button>
+            {% endif %}
           </div>
         </div>
 
-        {% if forecast_source %}
+        {% if not no_data_html %} {% if forecast_source %}
         <p style="margin: 6px 0; color: #666">
           Forecast data source: <strong>{{ forecast_source }}</strong>
         </p>
@@ -159,6 +161,7 @@
             </div>
           </div>
         </section>
+        {% endif %}
 
         <div class="map-wrapper">
           {% if no_data_html %} {{ no_data_html|safe }} {% else %}

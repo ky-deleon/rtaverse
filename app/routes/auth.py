@@ -89,7 +89,7 @@ def dashboard():
                 pass
     
     no_data_html = None if not no_data else render_no_data(
-        "No accident data available. Upload a file to get started."
+        "No data available in the database. Upload a file to get started."
     )
     
     return render_template(

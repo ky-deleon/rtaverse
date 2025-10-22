@@ -53,10 +53,12 @@
   margin-top: 20px;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 600px;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(4, 55, 242, 0.12);
   background: white;
+  flex: 1;
+  /* Override existing max-height rules */
+  max-height: none;
 }
 
 .data-table {
@@ -519,7 +521,10 @@
   background: white;
   padding: 30px;
   border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Makes the white box grow */
 }
 
 .file-header {
@@ -926,6 +931,7 @@ button.primary:disabled {
 }
 
 .no-data {
+  flex: 1; /* Makes the message area grow to fill the container */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1352,4 +1358,11 @@ td.is-readonly {
 .main-content {
   display: flex;
   flex-direction: column;
+}
+
+#tableViewWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden; /* Good practice for nested flex containers */
 }

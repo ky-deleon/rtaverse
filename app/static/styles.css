@@ -534,7 +534,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 400px;
+  height: 100%; /* <-- CHANGED from 400px */
+  width: 100%; /* <-- ADDED */
+  box-sizing: border-box; /* <-- ADDED (good practice) */
   text-align: center;
   color: #0437f2;
   font-size: 18px;

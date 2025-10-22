@@ -19,27 +19,54 @@ def generate_no_data_html():
         <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="#0437F2" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
         </svg>
-        <p>No data found in the database.<br>Please upload a dataset on the Database page to begin.</p>
+        <p>
+              No data available in the database. Upload a file to get started.
+            </p>
     </div>
     """)
 # --- END NEW HELPER FUNCTION ---
 
 
-# --- MODIFIED graphs() FUNCTION ---
+# In views.py
+
 @views_bp.route("/graphs")
 def graphs():
     if not is_logged_in():
         return redirect(url_for("auth.login"))
 
-    active_table = session.get("forecast_table") 
-    all_db_tables = list_tables()
+    # --- START OF FIX ---
+    # 1. Get all usable tables, using the same filter logic as your database page
+    all_tables = list_tables()
+    EXCLUDE_PREFIXES = {"sys_","mysql_","tmp_","app_"}
+    EXCLUDE_EXACT = {"app_settings","schema_migrations"}
+    available_tables = sorted([
+        t for t in all_tables 
+        if t not in EXCLUDE_EXACT and not any(t.startswith(p) for p in EXCLUDE_PREFIXES)
+    ])
 
-    if not active_table or active_table not in all_db_tables:
-        no_data_message = generate_no_data_html()
-        return render_template("graphs.html", no_data_html=no_data_message, missing_table=active_table or "Not Set")
+    # 2. Check the table currently in the session
+    active_table = session.get("forecast_table")
 
-    return render_template("graphs.html") 
-# --- END MODIFIED FUNCTION ---
+    # 3. Check if the session table is invalid (e.g., None or was deleted)
+    if not active_table or active_table not in available_tables:
+        
+        # 4. If it's invalid, check if ANY other tables exist
+        if not available_tables:
+            # 5. No tables exist at all. Show the "No data" message.
+            no_data_message = generate_no_data_html()
+            return render_template(
+                "graphs.html", 
+                no_data_html=no_data_message, 
+                missing_table=active_table or "Not Set"
+            )
+        else:
+            # 6. Tables DO exist. Automatically select the first one.
+            active_table = available_tables[0]
+            session["forecast_table"] = active_table
+            
+    # 7. By this point, a valid table is selected. Render the graph page normally.
+    return render_template("graphs.html")
+    # --- END OF FIX ---
 
 
 # In views.py, the existing database_page function remains the same

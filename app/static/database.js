@@ -132,13 +132,14 @@ $(document).on("change", "#select-all", function () {
 $(document).ready(function () {
   console.log("Document ready, looking for table...");
 
+  if ($(".file-selection-container").length > 0) {
+    $(".breadcrumbs").show();
+    $(".header").show();
+  }
+
   // Check if the uploaded table exists
   if ($("#uploadedTable").length > 0) {
     // In database.js, inside $(document).ready() and the if ($("#uploadedTable").length > 0) block
-
-    $(".breadcrumbs").hide();
-    $(".header").hide();
-    $(".upload-header").hide();
     // START: New Export Functionality
 
     // --- Helper function to get currently displayed data from the table ---
