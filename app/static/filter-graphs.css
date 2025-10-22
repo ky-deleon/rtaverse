@@ -685,3 +685,23 @@ input:checked + .slider:before {
   color: #ffffff;
   padding-left: 50px;
 }
+
+.js-plotly-plot .plotly,
+.js-plotly-plot .plotly svg {
+  transition: none !important;
+}
+
+.js-plotly-plot * {
+  transition-property: none !important;
+}
+
+.plotly .legend,
+.plotly .legend .legendtoggle,
+.plotly .legend .legendtext {
+  transition: none !important;
+  transform: none !important;
+  text-shadow: none !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  letter-spacing: normal !important;
+}

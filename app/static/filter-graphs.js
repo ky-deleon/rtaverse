@@ -330,6 +330,7 @@ function renderHistoricalBarChart(chartId, data) {
   const yAxisRange = [0, maxValue * 1.15];
 
   const layout = {
+    hovermode: "closest",
     font: { family: "Chillax, sans-serif" }, // <-- Add this line
     margin: { l: 60, r: 10, t: 20, b: 40 },
     xaxis: { title: "Hour of Day (0–23)" },
@@ -367,12 +368,21 @@ function renderForecastGroupedBarChart(elementId, data, xTitle, yTitle) {
 
   // Revert to the original, simpler layout.
   const layout = {
+    hovermode: "closest",
     font: { family: "Chillax, sans-serif" }, // <-- Add this line
     barmode: "group",
     margin: { l: 60, r: 10, t: 40, b: 40 },
     xaxis: { title: xTitle },
     yaxis: { title: yTitle, gridcolor: "rgba(0,0,0,0.1)" },
-    legend: { orientation: "h", x: 0, y: 1.15 },
+    legend: {
+      orientation: "h",
+      x: 0,
+      y: 1.15,
+      font: {
+        weight: "normal",
+      },
+      hovermode: false,
+    },
   };
   // --- END OF FINAL FIX ---
 
@@ -480,6 +490,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
       // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         barmode: "group",
         margin: { l: 60, r: 80, t: 40, b: 80 },
@@ -496,7 +507,15 @@ async function loadDayOfWeekChart(filters = currentFilters) {
           rangemode: "tozero",
           automargin: true,
         },
-        legend: { orientation: "h", x: 0, y: 1.15 },
+        legend: {
+          orientation: "h",
+          x: 0,
+          y: 1.15,
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
+        },
       };
       Plotly.newPlot(
         chartId,
@@ -528,6 +547,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
       };
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         margin: { l: 60, r: 80, t: 40, b: 80 },
         yaxis: {
@@ -542,7 +562,15 @@ async function loadDayOfWeekChart(filters = currentFilters) {
           title: "Avg Victims/Accident",
           automargin: true,
         },
-        legend: { orientation: "h", x: 0, y: 1.15 },
+        legend: {
+          orientation: "h",
+          x: 0,
+          y: 1.15,
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
+        },
       };
       Plotly.newPlot(chartId, [trace1, trace2], layout, {
         displayModeBar: false,
@@ -642,12 +670,21 @@ async function loadTopBarangaysChart(filters = currentFilters) {
       // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         barmode: "group",
         margin: { l: 140, r: 40, t: 10, b: 40 },
         yaxis: { title: "" },
         xaxis: { title: "Total Accident Count", gridcolor: "rgba(0,0,0,0.1)" },
-        legend: { orientation: "h", x: 0, y: 1.15 },
+        legend: {
+          orientation: "h",
+          x: 0,
+          y: 1.15,
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
+        },
       };
       Plotly.newPlot(chartId, [traceHist, traceFcst], layout, {
         displayModeBar: false,
@@ -669,6 +706,7 @@ async function loadTopBarangaysChart(filters = currentFilters) {
         marker: { color: "#4D8DFF" },
       };
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         margin: { l: 140, r: 40, t: 10, b: 40 },
         xaxis: { title: "Count of Accidents", gridcolor: "rgba(0,0,0,0.1)" },
@@ -770,6 +808,7 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
       // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         barmode: "stack",
         margin: { l: 60, r: 10, t: 40, b: 40 },
@@ -779,7 +818,15 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
           ticksuffix: "%",
           gridcolor: "rgba(0,0,0,0.1)",
         },
-        legend: { orientation: "h", x: 0, y: 1.15 },
+        legend: {
+          orientation: "h",
+          x: 0,
+          y: 1.15,
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
+        },
       };
       Plotly.newPlot(chartId, [traceYes, traceNo, traceUnknown], layout, {
         displayModeBar: false,
@@ -813,6 +860,7 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
         marker: { color: "#A9A9A9" },
       };
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" }, // <-- Add this line
         barmode: "stack",
         margin: { l: 60, r: 10, t: 40, b: 40 },
@@ -823,7 +871,15 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
           gridcolor: "rgba(0,0,0,0.1)",
         },
 
-        legend: { orientation: "h", x: 0, y: 1.15 },
+        legend: {
+          orientation: "h",
+          x: 0,
+          y: 1.15,
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
+        },
       };
       Plotly.newPlot(chartId, [traceYes, traceNo, traceUnknown], layout, {
         displayModeBar: false,
@@ -919,6 +975,7 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
       const yAxisRange = [0, maxValue * 1.15];
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" },
         margin: { l: 60, r: 10, t: 20, b: 60 },
         xaxis: { title: "Age Group" },
@@ -1037,12 +1094,17 @@ async function loadOffenseTypeChart(filters = currentFilters) {
       };
 
       const layout = {
+        hovermode: "closest",
         font: { family: "Chillax, sans-serif" },
         showlegend: true,
         legend: {
           orientation: "h",
           y: -0.1,
           yanchor: "top",
+          font: {
+            weight: "normal",
+          },
+          hovermode: false,
         },
         margin: { t: 20, b: 50, l: 20, r: 20 },
         annotations: [
