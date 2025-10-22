@@ -209,6 +209,18 @@ function capFirst(s) {
   return s;
 }
 
+function formatModelName(modelName) {
+  if (!modelName) return "";
+  // 1. Replace underscores with spaces
+  // 2. Split into words
+  // 3. Capitalize the first letter of each word
+  // 4. Join them back together
+  return modelName
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 async function loadHourlyChart(filters = currentFilters) {
   const chartId = "hourlyBar";
   const chartElement = document.getElementById(chartId);
@@ -216,10 +228,9 @@ async function loadHourlyChart(filters = currentFilters) {
 
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle || "Accidents by Hour of Day";
-    }
+    // We will set the title *after* the data fetch,
+    // so we can clear the old one or show a default.
+    // This logic is moved down.
   }
 
   try {
@@ -256,10 +267,17 @@ async function loadHourlyChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Accident by Hour of Day (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      // --- START OF CHANGE ---
+      const forecastTitle = `Hourly Forecast (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+      // --- END OF CHANGE ---
+
+      if (titleEl) {
+        titleEl.textContent = forecastTitle;
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
+
       renderForecastGroupedBarChart(
         chartId,
         j.data,
@@ -267,9 +285,18 @@ async function loadHourlyChart(filters = currentFilters) {
         "Total Accidents"
       );
     } else {
+      // --- RECOMMENDED FIX FOR HISTORICAL ---
       if (titleEl) {
-        titleEl.classList.add("clickable-title");
+        // 1. Define the default title
+        const defaultTitle = "Accidents by Hour of Day";
+
+        // 2. Set the data attribute (if it's missing, use the default)
+        titleEl.dataset.chartTitle = titleEl.dataset.chartTitle || defaultTitle;
+
+        // 3. Set the visible text *from* the data attribute
+        titleEl.textContent = titleEl.dataset.chartTitle;
       }
+      // --- END RECOMMENDATION ---
 
       renderHistoricalBarChart(chartId, j.data);
     }
@@ -361,9 +388,10 @@ async function loadDayOfWeekChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
+    // Reset to default title, will be updated based on mode
+    titleEl.dataset.chartTitle = "Accidents and Severity by Day of Week";
     if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle || "Accidents and Severity by Day of Week";
+      titleEl.textContent = titleEl.dataset.chartTitle;
     }
   }
 
@@ -398,10 +426,16 @@ async function loadDayOfWeekChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Accidents and Severity by Day of Week (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      const forecastTitle = `Severity & Count Forecast (${capFirst(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+      if (titleEl) {
+        titleEl.textContent = forecastTitle;
+        // --- START OF CHANGE ---
+        // Also update the dataset property for the enlarged view
+        titleEl.dataset.chartTitle = forecastTitle;
+        // --- END OF CHANGE ---
+      }
       const {
         labels,
         historical_counts,
@@ -527,9 +561,10 @@ async function loadTopBarangaysChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
+    // Set a default title, which will be updated based on the mode
+    titleEl.dataset.chartTitle = "Top 10 Barangays by Accident Count";
     if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle || "Top 10 Barangays by Accident Count";
+      titleEl.textContent = titleEl.dataset.chartTitle;
     }
   }
 
@@ -564,10 +599,16 @@ async function loadTopBarangaysChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Top 10 Barangays by Accident Count (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      // --- START OF CHANGE ---
+      const forecastTitle = `Top 10 Barangays Forecast (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+      // --- END OF CHANGE ---
+
+      if (titleEl) {
+        titleEl.textContent = forecastTitle;
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
 
       let forecastData = j.data.labels.map((label, index) => ({
         label: label,
@@ -649,10 +690,10 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
+    // Set the default title for non-forecast mode
+    titleEl.dataset.chartTitle = "Proportion of Alcohol Involvement by Hour";
     if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle ||
-        "Proportion of Alcohol Involvement by Hour";
+      titleEl.textContent = titleEl.dataset.chartTitle;
     }
   }
 
@@ -689,10 +730,17 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Proportion of Alcohol Involvement by Hour (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      // --- START OF CHANGE ---
+      const forecastTitle = `Forecasted Alcohol Involvement (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+      // --- END OF CHANGE ---
+
+      if (titleEl) {
+        titleEl.textContent = forecastTitle;
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
+
       const { hours, forecast_yes_pct, forecast_no_pct, forecast_unknown_pct } =
         j.data;
       const x = hours.map(String);
@@ -794,9 +842,10 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
+    // Set the default title for both the card and the enlarged view
+    titleEl.dataset.chartTitle = "Total Victims by Age";
     if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle || "Total Victims by Age";
+      titleEl.textContent = titleEl.dataset.chartTitle;
     }
   }
 
@@ -829,10 +878,22 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Total Victims by Age (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      // --- START OF CHANGES ---
+
+      // 1. Create a formatted title using the helper function.
+      const forecastTitle = `Victims by Age Forecast (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+
+      if (titleEl) {
+        // 2. Update the visible title on the card.
+        titleEl.textContent = forecastTitle;
+        // 3. Update the dataset title for the enlarged view to ensure consistency.
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
+
+      // --- END OF CHANGES ---
+
       renderForecastGroupedBarChart(
         chartId,
         j.data,
@@ -855,11 +916,10 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
       };
 
       const maxValue = Math.max(...values);
-
       const yAxisRange = [0, maxValue * 1.15];
 
       const layout = {
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         margin: { l: 60, r: 10, t: 20, b: 60 },
         xaxis: { title: "Age Group" },
         yaxis: {
@@ -887,9 +947,10 @@ async function loadOffenseTypeChart(filters = currentFilters) {
 
   if (titleEl) {
     titleEl.classList.add("clickable-title");
+    // Set the default title for both the card and the enlarged view
+    titleEl.dataset.chartTitle = "Accidents by Offense Type";
     if (!isForecastMode) {
-      titleEl.textContent =
-        titleEl.dataset.chartTitle || "Accidents by Offense Type";
+      titleEl.textContent = titleEl.dataset.chartTitle;
     }
   }
 
@@ -922,10 +983,24 @@ async function loadOffenseTypeChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      if (titleEl)
-        titleEl.textContent = `Accidents by Offense Type (${capFirst(
-          j.data.model_used
-        )}, ${j.data.horizon} mo)`;
+      // --- START OF CHANGES ---
+
+      // 1. Define the specific forecast title as requested: "Offense Type Forecast".
+      //    Use the formatModelName helper for a clean model display (e.g., "Random Forest").
+      const forecastTitle = `Offense Type Forecast (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+
+      if (titleEl) {
+        // 2. Update the visible title on the dashboard card.
+        titleEl.textContent = forecastTitle;
+
+        // 3. Update the dataset attribute to ensure the enlarged view has the same, correct title.
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
+
+      // --- END OF CHANGES ---
+
       renderForecastGroupedBarChart(
         chartId,
         j.data,
@@ -956,14 +1031,13 @@ async function loadOffenseTypeChart(filters = currentFilters) {
         textinfo: "percent",
         textposition: "inside",
         hoverinfo: "label+percent+value",
-        // The new code to set your custom colors
         marker: {
           colors: ["#4D8DFF", "#ff6700", "#FFB200"],
         },
       };
 
       const layout = {
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         showlegend: true,
         legend: {
           orientation: "h",
