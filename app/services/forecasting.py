@@ -345,9 +345,9 @@ def build_forecast_map_html(
     def color_for(v):
         if v <= 0: return 'grey'
         if v <= median_th: return 'green'
-        if v <= high_th: return 'orange'
+        if v <= high_th: return '#ffb200'
         return 'red'
-    
+     
     safe_center_lat = df_filtered["LATITUDE"].astype(float).mean(); safe_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
     if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
     m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
@@ -363,6 +363,6 @@ def build_forecast_map_html(
         if row['Total_Forecasted_Accidents'] > 0: popup_html += f"<b>Forecasted Accidents (Future): {row['Total_Forecasted_Accidents']:.2f}</b><br>"
         color = color_for(float(row['Total_Events']))
         radius = 5 + (np.log1p(float(row['Total_Events'])) * 5)
-        folium.CircleMarker(location=[float(row['Center_Lat']), float(row['Center_Lon'])], radius=radius, popup=folium.Popup(popup_html, max_width=300), color=color, fill=True, fill_color=color, fill_opacity=0.7).add_to(m)
+        folium.CircleMarker(location=[float(row['Center_Lat']), float(row['Center_Lon'])], radius=radius, popup=folium.Popup(popup_html, max_width=300), color=color, fill=True, fill_color=color, fill_opacity=0.8).add_to(m)
         
     return m.get_root().render()

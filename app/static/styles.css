@@ -96,16 +96,16 @@ main p {
   flex-shrink: 0;
 }
 .dot.green {
-  background-color: #4ade80;
+  background-color: green;
 }
 .dot.yellow {
-  background-color: #facc15;
+  background-color: #ffb200;
 }
 .dot.red {
-  background-color: #f87171;
+  background-color: red;
 }
 .dot.grey {
-  background-color: #9ca3af;
+  background-color: grey;
 }
 .legend-item .tooltip-box {
   visibility: hidden;
