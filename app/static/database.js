@@ -619,10 +619,6 @@ $(document).ready(function () {
       dataTable.draw();
     }
 
-    // In database.js, replace the existing $("#editTableBtn").on("click",...) function
-
-    // In database.js, REPLACE your existing $("#editTableBtn").on("click",...) function
-
     // In database.js, REPLACE the existing $("#editTableBtn").on("click",...) function
     $("#editTableBtn").on("click", function () {
       isEditing = true;
@@ -639,15 +635,10 @@ $(document).ready(function () {
 
       // Define which of the VISIBLE columns are derived and should not be editable
       const nonEditableColumns = [
-        "MONTH",
-        "DAY_OF_WEEK",
-        "TIME_CLUSTER",
-        "YEAR",
-        "DAY",
-        "WEEKDAY",
-        "ACCIDENT_HOTSPOT",
-        "GENDER_CLUSTER",
-        "ALCOHOL_USED_CLUSTER",
+        "DATE_COMMITTED",
+        "TIME_COMMITTED",
+        "LONGITUDE",
+        "LATITUDE",
       ];
 
       // --- NEW: Add a visual indicator for non-editable columns ---
