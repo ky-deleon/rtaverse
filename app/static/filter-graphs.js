@@ -86,17 +86,29 @@ function buildQueryString(filters) {
     params.set("age_to", String(filters.ageTo));
   return params.toString();
 }
+// REPLACE your old applyFilters function with this
 function applyFilters() {
   setTimeout(() => {
     currentFilters = getFilterState();
-    loadKpiCards(currentFilters);
-    loadGenderKpiCards(currentFilters);
-    loadHourlyChart(currentFilters);
-    loadDayOfWeekChart(currentFilters);
-    loadTopBarangaysChart(currentFilters);
-    loadAlcoholByHourChart(currentFilters);
-    loadVictimsByAgeChart(currentFilters);
-    loadOffenseTypeChart(currentFilters);
+
+    // --- NEW SPINNER LOGIC START ---
+    const spinner = document.getElementById("forecastSpinner");
+    const grid = document.querySelector(".vis-grid");
+
+    if (isForecastMode && spinner && grid) {
+      // If forecast mode is on, show spinner and hide charts
+      spinner.classList.remove("hidden");
+      grid.classList.add("hidden");
+    } else if (grid) {
+      // If not in forecast mode, hide spinner and show charts
+      grid.classList.remove("hidden");
+      if (spinner) spinner.classList.add("hidden");
+    }
+    // --- NEW SPINNER LOGIC END ---
+
+    // Call the new async loader function to load all data
+    loadAllVisualizations(currentFilters);
+
     closeFilterModal();
   }, 0);
 }
@@ -109,6 +121,35 @@ function applyFiltersWithValidation() {
   if (hourFrom > hourTo)
     return alert("Hour 'From' cannot be greater than 'To'.");
   applyFilters();
+}
+// ADD THIS NEW FUNCTION right after applyFilters
+async function loadAllVisualizations(filters) {
+  const spinner = document.getElementById("forecastSpinner");
+  const grid = document.querySelector(".vis-grid");
+
+  try {
+    // Load KPIs first
+    const kpiPromises = [loadKpiCards(filters), loadGenderKpiCards(filters)];
+    await Promise.all(kpiPromises);
+
+    // Load all charts in parallel
+    const chartPromises = [
+      loadHourlyChart(filters),
+      loadDayOfWeekChart(filters),
+      loadTopBarangaysChart(filters),
+      loadAlcoholByHourChart(filters),
+      loadVictimsByAgeChart(filters),
+      loadOffenseTypeChart(filters),
+    ];
+    // Wait for all charts to finish loading
+    await Promise.all(chartPromises);
+  } catch (error) {
+    console.error("Error loading visualizations:", error);
+  } finally {
+    // ALWAYS hide spinner and show the grid when done
+    if (spinner) spinner.classList.add("hidden");
+    if (grid) grid.classList.remove("hidden");
+  }
 }
 function clearFilters() {
   // --- START FIX ---
