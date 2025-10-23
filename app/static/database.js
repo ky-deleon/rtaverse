@@ -340,7 +340,7 @@ $(document).ready(function () {
     dataTable = $("#uploadedTable").DataTable({
       paging: false,
       lengthChange: false,
-      ordering: true,
+      ordering: false,
       searching: true,
       dom: "rtip",
       language: {
@@ -375,14 +375,8 @@ $(document).ready(function () {
             '<div id="customInfo" class="dataTables_info_container" style="margin-top:10px;"></div>'
           ).insertAfter(".table-container");
         }
-        $("#customInfo").append(info);
 
-        // Then force order by the DATE_COMMITTED column if present:
-        const dateIdx = getDateColumnIndex(api);
-        // you already have this helper
-        if (dateIdx !== -1) {
-          api.order([dateIdx, "asc"]).draw();
-        }
+        $("#customInfo").append(info);
 
         // Create year buttons after info text
         createYearButtons(this.api());
