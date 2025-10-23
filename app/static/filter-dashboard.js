@@ -3,6 +3,8 @@
 // ==========================================
 
 let selectedLocations = [];
+let timeFromPicker = null;
+let timeToPicker = null;
 
 function openFilterModal() {
   document.getElementById("filterModal").classList.remove("hidden");
@@ -138,12 +140,12 @@ function initializeMonthRange() {
 }
 
 // REVISED: applyFilters to handle multiple locations
+// REVISED: applyFilters to handle multiple locations
 function applyFilters() {
   // Read selected locations from the data attributes of the pills
   const locations = Array.from(document.querySelectorAll(".location-pill")).map(
     (pill) => pill.dataset.location
   );
-
   // --- MODIFICATION: Get elements, not just values ---
   const monthFromEl = document.getElementById("monthFrom");
   const monthToEl = document.getElementById("monthTo");
@@ -195,7 +197,7 @@ function applyFilters() {
         dateError.textContent =
           "The 'From' date cannot be after the 'To' date.";
       } else {
-        // This is the other error (e.g., year 2014)
+        // This is the other error (e..g., year 2014)
         dateError.textContent =
           "Please choose months between Jan 2015 and Dec 2025.";
       }
@@ -217,6 +219,12 @@ function applyFilters() {
   }
   // --- END MODIFICATION ---
 
+  // --- START: MODIFIED Card Logic ---
+
+  // Check if any time/date filters are set
+  const hasDateFilter = monthFrom || monthTo;
+  const hasTimeFilter = timeFrom || timeTo;
+
   const dateEl = document.getElementById("cardDate");
   const timeEl = document.getElementById("cardTime");
 
@@ -225,13 +233,27 @@ function applyFilters() {
     return d.toLocaleDateString("en-PH", { month: "short", year: "numeric" });
   }
 
+  // --- Date Card Logic ---
   if (dateEl) {
-    if (monthFrom && monthTo)
-      dateEl.textContent = `${fmtMonth(monthFrom)} – ${fmtMonth(monthTo)}`;
-    else if (monthFrom) dateEl.textContent = `from ${fmtMonth(monthFrom)}`;
-    else if (monthTo) dateEl.textContent = `until ${fmtMonth(monthTo)}`;
-    else dateEl.textContent = "—";
-    dateEl.removeAttribute("data-live");
+    if (hasDateFilter) {
+      // A date range is set, so display it
+      if (monthFrom && monthTo)
+        dateEl.textContent = `${fmtMonth(monthFrom)} – ${fmtMonth(monthTo)}`;
+      else if (monthFrom) dateEl.textContent = `from ${fmtMonth(monthFrom)}`;
+      else if (monthTo) dateEl.textContent = `until ${fmtMonth(monthTo)}`;
+      dateEl.removeAttribute("data-live");
+    } else {
+      // No date range set. Default to live time.
+      const now = new Date();
+      const dateFmt = new Intl.DateTimeFormat("en-PH", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      });
+      dateEl.textContent = dateFmt.format(now);
+      dateEl.setAttribute("data-live", "true");
+    }
   }
 
   const fmtTime = (t) => {
@@ -242,15 +264,32 @@ function applyFilters() {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // --- Time Card Logic ---
   if (timeEl) {
-    let timeLabel = "—";
-    if (timeFrom && timeTo)
-      timeLabel = `${fmtTime(timeFrom)} – ${fmtTime(timeTo)}`;
-    else if (timeFrom) timeLabel = `from ${fmtTime(timeFrom)}`;
-    else if (timeTo) timeLabel = `until ${fmtTime(timeTo)}`;
-    timeEl.textContent = timeLabel;
-    timeEl.removeAttribute("data-live");
+    if (hasTimeFilter) {
+      // A time range is set, so display it
+      let timeLabel = "—";
+      if (timeFrom && timeTo)
+        timeLabel = `${fmtTime(timeFrom)} – ${fmtTime(timeTo)}`;
+      else if (timeFrom) timeLabel = `from ${fmtTime(timeFrom)}`;
+      else if (timeTo) timeLabel = `until ${fmtTime(timeTo)}`;
+
+      timeEl.textContent = timeLabel;
+      timeEl.removeAttribute("data-live");
+    } else {
+      // No time range set. Default to live time.
+      const now = new Date();
+      const timeFmt = new Intl.DateTimeFormat("en-PH", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      });
+      timeEl.textContent = timeFmt.format(now).toLowerCase();
+      timeEl.setAttribute("data-live", "true");
+    }
   }
+  // --- END: MODIFIED Card Logic ---
 
   // --- START: Loader Logic ---
   const loader = document.getElementById("mapLoader");
@@ -338,31 +377,20 @@ function clearFilters() {
   }
   // --- END MODIFICATION ---
 
-  if (timeFromEl) timeFromEl.value = "";
-  if (timeToEl) timeToEl.value = "";
+  // --- MODIFICATION: Use flatpickr API to clear time ---
+  if (timeFromPicker) {
+    timeFromPicker.clear();
+  }
+  if (timeToPicker) {
+    timeToPicker.clear();
+  }
+  // --- END MODIFICATION ---
+
   if (dateError) dateError.classList.add("hidden");
 
-  const dateEl = document.getElementById("cardDate");
-  const timeEl = document.getElementById("cardTime");
-  if (dateEl && timeEl) {
-    dateEl.setAttribute("data-live", "true");
-    timeEl.setAttribute("data-live", "true");
-    const now = new Date();
-    const dateFmt = new Intl.DateTimeFormat("en-PH", {
-      month: "long",
-      day: "2-digit",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    });
-    const timeFmt = new Intl.DateTimeFormat("en-PH", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "Asia/Manila",
-    });
-    dateEl.textContent = dateFmt.format(now);
-    timeEl.textContent = timeFmt.format(now).toLowerCase();
-  }
+  // --- MODIFICATION: Use new helper function ---
+  resetCardsToLive();
+  // --- END MODIFICATION ---
 
   // --- START: Added Loader Logic ---
   const loader = document.getElementById("mapLoader");
@@ -381,7 +409,6 @@ function clearFilters() {
       iframe.classList.remove("hidden");
       iframe.onload = null; // Clear the event listener
     };
-
     // Set the iframe src to the default URL
     iframe.src = baseUrl;
   } else if (iframe && baseUrl) {
@@ -390,7 +417,8 @@ function clearFilters() {
   }
   // --- END: Added Loader Logic ---
 
-  closeFilterModal(); // Close the modal
+  closeFilterModal();
+  // Close the modal
 }
 // ==========================================
 // === INITIALIZATION
@@ -417,3 +445,69 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+// At the end of your "DOMContentLoaded" listener [cite: 111]
+document.addEventListener("DOMContentLoaded", function () {
+  // ... your existing code [cite: 111]
+  initializeLocationFilter();
+  initializeMonthRange();
+
+  // Initialize flatpickr for the time inputs
+  // Initialize flatpickr for the time inputs
+  // --- MODIFIED: Initialize flatpickr instances separately ---
+
+  // Define the shared configuration
+  const flatpickrConfig = {
+    enableTime: true,
+    noCalendar: true,
+    minuteIncrement: 60,
+    altInput: true,
+    altFormat: "h:i K",
+    time_24hr: false,
+    dateFormat: "H:i",
+  };
+
+  // Get the original input elements
+  const timeFromEl = document.getElementById("timeFrom");
+  const timeToEl = document.getElementById("timeTo");
+
+  // Initialize and store instances in the global variables
+  if (timeFromEl) {
+    timeFromPicker = flatpickr(timeFromEl, flatpickrConfig);
+  }
+  if (timeToEl) {
+    timeToPicker = flatpickr(timeToEl, flatpickrConfig);
+  }
+  // --- END MODIFICATION ---
+  // ... your modal close listeners [cite: 111]
+});
+
+// ... after initializeMonthRange() function ...
+
+/**
+ * Resets the Date/Time cards to the current live time.
+ */
+function resetCardsToLive() {
+  const dateEl = document.getElementById("cardDate");
+  const timeEl = document.getElementById("cardTime");
+
+  if (dateEl && timeEl) {
+    dateEl.setAttribute("data-live", "true");
+    timeEl.setAttribute("data-live", "true");
+    const now = new Date();
+    const dateFmt = new Intl.DateTimeFormat("en-PH", {
+      month: "long",
+      day: "2-digit",
+      year: "numeric",
+      timeZone: "Asia/Manila",
+    });
+    const timeFmt = new Intl.DateTimeFormat("en-PH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    });
+    dateEl.textContent = dateFmt.format(now);
+    timeEl.textContent = timeFmt.format(now).toLowerCase();
+  }
+}

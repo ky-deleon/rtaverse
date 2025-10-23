@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="../static/filter-dashboard.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
     <script defer src="../static/script.js"></script>
   </head>
 
@@ -264,13 +268,21 @@
           <label class="filter-label">Time</label>
           <div class="time-range">
             <div class="time-input-group">
-              <input type="time" id="timeFrom" class="time-input" />
+              <input
+                type="text"
+                id="timeFrom"
+                class="time-input time-picker-hourly"
+                placeholder="-- From --"
+              />
             </div>
-
             <span class="time-separator">to</span>
-
             <div class="time-input-group">
-              <input type="time" id="timeTo" class="time-input" />
+              <input
+                type="text"
+                id="timeTo"
+                class="time-input time-picker-hourly"
+                placeholder="-- To --"
+              />
             </div>
           </div>
 
@@ -299,6 +311,7 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="../static/script.js"></script>
     <script src="../static/filter-dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <script>
       document

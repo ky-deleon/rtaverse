@@ -397,3 +397,20 @@
 .time-range .time-input {
   flex: 1; /* both inputs take equal space */
 }
+
+/* MODIFIED: Added .flatpickr-input to the selector */
+.time-input,
+.flatpickr-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
