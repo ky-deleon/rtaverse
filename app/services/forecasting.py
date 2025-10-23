@@ -351,9 +351,34 @@ def build_forecast_map_html(
     safe_center_lat = df_filtered["LATITUDE"].astype(float).mean(); safe_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
     if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
 
+    font_css = """
+    <style>
+        @font-face {
+        font-family: "Chillax";
+        /* --- UPDATE THIS PATH --- */
+        src: url("/static/fonts/Chillax-Medium.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: "Chillax";
+        /* --- UPDATE THIS PATH --- */
+        src: url("/static/fonts/Chillax-Semibold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        }
+    </style>
+    """
+
+    # 2. Create your map
     m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
-    
-    # --- START: REPLACE THIS ENTIRE LOOP ---
+
+    # 3. Add the font CSS to the map's <head>
+    m.get_root().header.add_child(folium.Element(font_css))
+
+    # --- END: SOLUTION ---
+        
+    # --- START: YOUR EXISTING LOOP ---
     for _, row in final_map_data.iterrows():
         if pd.isna(row['Center_Lat']) or pd.isna(row['Center_Lon']): 
             continue
@@ -383,19 +408,19 @@ def build_forecast_map_html(
             {f"<p style='margin: 5px 0;'><strong>Forecasted:</strong> {row['Total_Forecasted_Accidents']:.2f}</p>" if row['Total_Forecasted_Accidents'] > 0 else ""}
             
             <a href="{streetview_url}" 
-               target="_blank" 
-               style="display: inline-block;
-                       width: 100%;
-                       box-sizing: border-box;
-                       text-align: center;
-                       margin-top: 10px;
-                       padding: 8px 12px;
-                       background-color: #0437F2; 
-                       color: white;
-                       text-decoration: none;
-                       border-radius: 5px;
-                       font-weight: 700;
-                       font-family: 'Chillax', sans-serif;">
+            target="_blank" 
+            style="display: inline-block;
+                    width: 100%;
+                    box-sizing: border-box;
+                    text-align: center;
+                    margin-top: 10px;
+                    padding: 8px 12px;
+                    background-color: #0437F2; 
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-weight: 700;
+                    font-family: 'Chillax', sans-serif;">
                 Open Street View
             </a>
         </div>
@@ -414,6 +439,6 @@ def build_forecast_map_html(
             fill_color=color, 
             fill_opacity=0.8
         ).add_to(m)
-    # --- END: REPLACEMENT ---
+    # --- END: YOUR EXISTING LOOP ---
         
     return m.get_root().render()
