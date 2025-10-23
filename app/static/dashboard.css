@@ -47,3 +47,57 @@
   border-radius: 12px;
   display: block;
 }
+
+/* ======================================== */
+/* === START: Added Loader Styles       === */
+/* (Copied from filter-graphs.css)      === */
+/* ======================================== */
+
+/* Utility class to hide elements */
+.hidden {
+  display: none !important;
+}
+
+.loader-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #0437f2;
+  font-family: "Chillax", sans-serif;
+  font-weight: 600;
+
+  /* Added styles to match map-frame */
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.loader-spinner {
+  border: 8px solid #e5ecff; /* Light blue */
+  border-top: 8px solid #0437f2; /* Main theme blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1.2s linear infinite;
+}
+
+.loader-container .loader-spinner {
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ======================================== */
+/* === END: Added Loader Styles         === */
+/* ======================================== */

@@ -165,6 +165,11 @@
 
         <div class="map-wrapper">
           {% if no_data_html %} {{ no_data_html|safe }} {% else %}
+
+          <div id="mapLoader" class="loader-container hidden">
+            <div class="loader-spinner"></div>
+            <p>Loading map, please wait...</p>
+          </div>
           <div
             id="map-endpoint"
             data-url="{{ url_for('api.folium_map') }}"

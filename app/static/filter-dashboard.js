@@ -138,7 +138,6 @@ function initializeMonthRange() {
 }
 
 // REVISED: applyFilters to handle multiple locations
-// REVISED: applyFilters to handle multiple locations
 function applyFilters() {
   // Read selected locations from the data attributes of the pills
   const locations = Array.from(document.querySelectorAll(".location-pill")).map(
@@ -155,6 +154,21 @@ function applyFilters() {
   const monthFrom = monthFromEl.value;
   const monthTo = monthToEl.value;
   // --- END MODIFICATION ---
+
+  // --- START: Updated Logic ---
+  // Check if all filters are empty
+  if (
+    locations.length === 0 &&
+    !monthFrom &&
+    !monthTo &&
+    !timeFrom &&
+    !timeTo
+  ) {
+    // If so, just close the modal and do nothing else.
+    closeFilterModal();
+    return;
+  }
+  // --- END: Updated Logic ---
 
   function validBounds(ym) {
     if (!ym) return true;
@@ -238,6 +252,26 @@ function applyFilters() {
     timeEl.removeAttribute("data-live");
   }
 
+  // --- START: Loader Logic ---
+  const loader = document.getElementById("mapLoader");
+  const iframe = document.querySelector(".map-frame");
+
+  if (loader && iframe) {
+    // Show loader and hide map
+    loader.classList.remove("hidden");
+    iframe.classList.add("hidden");
+
+    // Add an onload event to the iframe
+    iframe.onload = () => {
+      // Once the new map is loaded, hide loader and show map
+      loader.classList.add("hidden");
+      iframe.classList.remove("hidden");
+      // Clear the event listener to avoid it firing on subsequent (e.g., in-map) loads
+      iframe.onload = null;
+    };
+  }
+  // --- END: Loader Logic ---
+
   const params = new URLSearchParams();
   if (monthFrom) params.set("start", monthFrom);
   if (monthTo) params.set("end", monthTo);
@@ -246,29 +280,51 @@ function applyFilters() {
   // Join the array of locations into a comma-separated string for the URL
   if (locations.length > 0) params.set("barangay", locations.join(","));
   const baseUrl = document.getElementById("map-endpoint")?.dataset.url;
-  const iframe = document.querySelector(".map-frame");
+
   if (baseUrl && iframe) {
     iframe.src = `${baseUrl}?${params.toString()}`;
+  } else if (loader) {
+    // Failsafe: If iframe doesn't exist, hide loader
+    loader.classList.add("hidden");
   }
 
   closeFilterModal();
 }
 
-// REVISED: clearFilters to clear the pills
+// REVISED: clearFilters to check if fields are already empty
 function clearFilters() {
+  // --- START: New check ---
+  // Read all filter elements
+  const locations = Array.from(document.querySelectorAll(".location-pill"));
+  const monthFromEl = document.getElementById("monthFrom");
+  const monthToEl = document.getElementById("monthTo");
+  const timeFromEl = document.getElementById("timeFrom");
+  const timeToEl = document.getElementById("timeTo");
+  const locationEl = document.getElementById("locationFilter");
+
+  // Check if all filter inputs are already empty
+  const isAlreadyClear =
+    locations.length === 0 &&
+    locationEl.value === "" && // Check the text input itself
+    monthFromEl.value === "" &&
+    monthToEl.value === "" &&
+    timeFromEl.value === "" &&
+    timeToEl.value === "";
+
+  if (isAlreadyClear) {
+    // If nothing to clear, just close the modal
+    closeFilterModal();
+    return;
+  }
+  // --- END: New check ---
+
   // --- START FIX ---
   // 1. Reset the underlying state for the location filter
   selectedLocations = [];
   document.getElementById("locationPillsContainer").innerHTML = ""; // Clear visual pills
   // --- END FIX ---
 
-  const locationEl = document.getElementById("locationFilter");
-  const monthFromEl = document.getElementById("monthFrom");
-  const monthToEl = document.getElementById("monthTo");
-  const timeFromEl = document.getElementById("timeFrom");
-  const timeToEl = document.getElementById("timeTo");
   const dateError = document.getElementById("dateError");
-
   if (locationEl) locationEl.value = "";
 
   // --- MODIFICATION: Clear error class on reset ---
@@ -308,11 +364,34 @@ function clearFilters() {
     timeEl.textContent = timeFmt.format(now).toLowerCase();
   }
 
-  const baseUrl = document.getElementById("map-endpoint")?.dataset?.url;
+  // --- START: Added Loader Logic ---
+  const loader = document.getElementById("mapLoader");
   const iframe = document.querySelector(".map-frame");
-  if (baseUrl && iframe) iframe.src = baseUrl;
-}
+  const baseUrl = document.getElementById("map-endpoint")?.dataset?.url;
 
+  if (loader && iframe && baseUrl) {
+    // Show loader and hide map
+    loader.classList.remove("hidden");
+    iframe.classList.add("hidden");
+
+    // Add an onload event to the iframe
+    iframe.onload = () => {
+      // Once the default map is loaded, hide loader and show map
+      loader.classList.add("hidden");
+      iframe.classList.remove("hidden");
+      iframe.onload = null; // Clear the event listener
+    };
+
+    // Set the iframe src to the default URL
+    iframe.src = baseUrl;
+  } else if (iframe && baseUrl) {
+    // Fallback if loader isn't found
+    iframe.src = baseUrl;
+  }
+  // --- END: Added Loader Logic ---
+
+  closeFilterModal(); // Close the modal
+}
 // ==========================================
 // === INITIALIZATION
 // ==========================================
