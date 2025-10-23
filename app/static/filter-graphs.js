@@ -1359,32 +1359,44 @@ async function downloadDashboardAsPDF() {
     // Use a for...of loop to handle async/await correctly
     for (const chartInfo of chartsToInclude) {
       const chartEl = document.getElementById(chartInfo.id);
-
       // Check if chart has been rendered and has data
       if (chartEl && chartEl.data) {
-        // Add a title for the chart
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(14);
-        pdf.text(chartInfo.title, PAGE_WIDTH / 2, yPos, { align: "center" });
-        yPos += 10;
+        // --- START OF PDF PAGE BREAK FIX ---
 
-        // Convert the Plotly chart to a PNG image data URL
+        // 1. Define heights for the title and image
+        const TITLE_PLUS_SPACING = 10; // Space for the title text
+        const CHART_SPACING_AFTER = 15; // Space after the chart
+        const imgHeight = (450 / 800) * CONTENT_WIDTH; //
+        const totalBlockHeight =
+          TITLE_PLUS_SPACING + imgHeight + CHART_SPACING_AFTER;
+
+        // 2. Check if the ENTIRE block (title + chart) fits on the current page
+        if (
+          yPos + totalBlockHeight >
+          pdf.internal.pageSize.getHeight() - MARGIN
+        ) {
+          pdf.addPage(); //
+          yPos = MARGIN; //
+        }
+
+        // 3. Now that we know there's space, add the title
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(14); //
+        pdf.text(chartInfo.title, PAGE_WIDTH / 2, yPos, { align: "center" });
+        yPos += TITLE_PLUS_SPACING; // Move yPos down past the title
+
+        // 4. Convert and add the chart image
         const imgData = await Plotly.toImage(chartEl, {
+          //
           format: "png",
-          width: 800, // Render at a higher resolution for better quality
+          width: 800,
           height: 450,
         });
 
-        const imgHeight = (450 / 800) * CONTENT_WIDTH; // Calculate aspect ratio
-
-        // If the chart doesn't fit on the current page, add a new one
-        if (yPos + imgHeight > pdf.internal.pageSize.getHeight() - MARGIN) {
-          pdf.addPage();
-          yPos = MARGIN;
-        }
-
         pdf.addImage(imgData, "PNG", MARGIN, yPos, CONTENT_WIDTH, imgHeight);
-        yPos += imgHeight + 15; // Add spacing after the chart
+        yPos += imgHeight + CHART_SPACING_AFTER; // Add spacing after the chart
+
+        // --- END OF PDF PAGE BREAK FIX ---
       }
     }
 
