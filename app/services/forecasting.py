@@ -350,19 +350,70 @@ def build_forecast_map_html(
      
     safe_center_lat = df_filtered["LATITUDE"].astype(float).mean(); safe_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
     if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
+
     m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
     
+    # --- START: REPLACE THIS ENTIRE LOOP ---
     for _, row in final_map_data.iterrows():
-        if pd.isna(row['Center_Lat']) or pd.isna(row['Center_Lon']): continue
-        top3 = row.get('Top_Barangays', None); barangay_str = ', '.join(top3) if isinstance(top3, list) else 'N/A'
-        popup_html = (f"<b>Hotspot #{int(row['ACCIDENT_HOTSPOT'])} ({display_hour_str})</b><br>"
-                      f"-----------------------------<br>"
-                      f"<b>Top Barangays:</b> {barangay_str}<br>"
-                      f"-----------------------------<br>")
-        if row['Total_Actual_Accidents'] > 0: popup_html += f"<b>Actual Accidents (Historical): {row['Total_Actual_Accidents']:.2f}</b><br>"
-        if row['Total_Forecasted_Accidents'] > 0: popup_html += f"<b>Forecasted Accidents (Future): {row['Total_Forecasted_Accidents']:.2f}</b><br>"
+        if pd.isna(row['Center_Lat']) or pd.isna(row['Center_Lon']): 
+            continue
+            
+        lat = float(row['Center_Lat'])
+        lng = float(row['Center_Lon'])
+        
+        # 1. Get Top 3 Barangays
+        top3 = row.get('Top_Barangays', None)
+        barangay_str = ', '.join(top3) if isinstance(top3, list) else 'N/A'
+        
+        # 2. Create the Google Street View URL
+        streetview_url = f"https://www.google.com/maps?q=&layer=c&cbll={lat},{lng}&cbp=12,90,0,0,5"
+
+        # 3. Create the new custom HTML for the popup
+        popup_html = f"""
+        <div style="font-family: 'Chillax', sans-serif; font-weight: 400; max-width: 250px; color: #1e1e1e;">
+            <h4 style="margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; font-weight: 700; color: #1e1e1e;">
+                Hotspot #{int(row['ACCIDENT_HOTSPOT'])}
+            </h4>
+            <p style="margin: 5px 0;"><strong>Time:</strong> {display_hour_str}</p>
+            <p style="margin: 5px 0;"><strong>Top Barangays:</strong> {barangay_str}</p>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+            
+            {f"<p style='margin: 5px 0;'><strong>Actual (Hist.):</strong> {row['Total_Actual_Accidents']:.2f}</p>" if row['Total_Actual_Accidents'] > 0 else ""}
+            {f"<p style='margin: 5px 0;'><strong>Forecasted:</strong> {row['Total_Forecasted_Accidents']:.2f}</p>" if row['Total_Forecasted_Accidents'] > 0 else ""}
+            
+            <a href="{streetview_url}" 
+               target="_blank" 
+               style="display: inline-block;
+                       width: 100%;
+                       box-sizing: border-box;
+                       text-align: center;
+                       margin-top: 10px;
+                       padding: 8px 12px;
+                       background-color: #0437F2; 
+                       color: white;
+                       text-decoration: none;
+                       border-radius: 5px;
+                       font-weight: 700;
+                       font-family: 'Chillax', sans-serif;">
+                Open Street View
+            </a>
+        </div>
+        """
+        
+        # 4. Add the CircleMarker with the new popup
         color = color_for(float(row['Total_Events']))
         radius = 5 + (np.log1p(float(row['Total_Events'])) * 5)
-        folium.CircleMarker(location=[float(row['Center_Lat']), float(row['Center_Lon'])], radius=radius, popup=folium.Popup(popup_html, max_width=300), color=color, fill=True, fill_color=color, fill_opacity=0.8).add_to(m)
+        
+        folium.CircleMarker(
+            location=[lat, lng], 
+            radius=radius, 
+            popup=folium.Popup(popup_html, max_width=300), 
+            color=color, 
+            fill=True, 
+            fill_color=color, 
+            fill_opacity=0.8
+        ).add_to(m)
+    # --- END: REPLACEMENT ---
         
     return m.get_root().render()
