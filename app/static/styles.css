@@ -626,3 +626,25 @@ body {
   display: block;
   font-size: 14px;
 }
+
+/* Add this new rule for the logo.
+  You can place this near the .app-title rule (around source 227).
+*/
+.sidebar-logo {
+  height: 28px; /* You can adjust this size */
+  width: 28px; /* You can adjust this size */
+  transition: opacity 0.3s ease;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Find this existing rule (from source 225) 
+  and add the ".sidebar.collapsed .sidebar-logo" selector.
+*/
+.sidebar.collapsed .app-title,
+.sidebar.collapsed .sidebar-logo {
+  display: none;
+}
