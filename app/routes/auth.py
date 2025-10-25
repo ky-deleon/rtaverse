@@ -57,7 +57,11 @@ def dashboard():
             session["logged_in"] = True
             session["username"] = username
         else:
-            return "<h3>Login failed. <a href='/'>Try again</a></h3>"
+            # --- MODIFIED BLOCK ---
+            # Return to login page with an error message
+            error_message = "Invalid username or password. Please try again."
+            return render_template("login.html", error_message=error_message)
+            # --- END MODIFIED BLOCK ---
     
     if not is_logged_in():
         return redirect(url_for("auth.login"))

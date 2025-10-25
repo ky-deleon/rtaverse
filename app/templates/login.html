@@ -21,7 +21,7 @@
       <form action="{{ url_for('auth.dashboard') }}" method="POST">
         <!-- Username -->
         <div class="form-group">
-          <div class="input-wrapper">
+          <div class="input-wrapper {% if error_message %}error{% endif %}">
             <span class="input-icon">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -41,13 +41,14 @@
               name="username"
               placeholder="Username"
               required
+              onfocus="clearLoginError()"
             />
           </div>
         </div>
 
         <!-- Password -->
         <div class="form-group">
-          <div class="input-wrapper">
+          <div class="input-wrapper {% if error_message %}error{% endif %}">
             <span class="input-icon">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -67,6 +68,7 @@
               name="password"
               placeholder="Password"
               required
+              onfocus="clearLoginError()"
             />
             <!-- Toggle Password -->
             <span class="toggle-password" onclick="togglePassword()">
@@ -86,6 +88,10 @@
           </div>
         </div>
 
+        <p class="login-error-message" onclick="clearLoginError()">
+          {% if error_message %} {{ error_message }} {% endif %}
+        </p>
+
         <p class="forgot-password">Forgot Password? Contact Admin.</p>
 
         <button type="submit" class="login-button">Login Now</button>
@@ -104,6 +110,24 @@
           passwordInput.type = "password";
           icon.innerHTML = `<path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>`;
         }
+      }
+
+      // Function to clear login errors
+      function clearLoginError() {
+        // This part is fine
+        const errorWrappers = document.querySelectorAll(".input-wrapper.error");
+        errorWrappers.forEach((wrapper) => {
+          wrapper.classList.remove("error");
+        });
+
+        // --- MODIFIED BLOCK ---
+        const errorMessage = document.querySelector(".login-error-message");
+        if (errorMessage) {
+          // Instead of hiding (display: none), just clear the text.
+          // The CSS will make it invisible.
+          errorMessage.textContent = "";
+        }
+        // --- END MODIFIED BLOCK ---
       }
     </script>
   </body>

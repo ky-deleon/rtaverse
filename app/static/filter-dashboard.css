@@ -177,11 +177,24 @@
 
 .time-input-group {
   flex: 1;
+  position: relative;
 }
 
-.time-input {
+/* 2. ADD THIS NEW RULE (you can place it after the .time-input:focus rule) */
+.time-input-icon {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.time-input,
+.flatpickr-input {
   width: 100%;
-  padding: 15px;
+  /* 3. MODIFY THIS PADDING RULE */
+  padding: 15px 48px 15px 15px; /* Was padding: 15px; */
   border: 2px solid #e5e7eb;
   border-radius: 15px;
   font-family: "Chillax", sans-serif;

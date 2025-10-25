@@ -84,6 +84,44 @@ body.login-page {
   background: transparent;
 }
 
+.input-wrapper.error {
+  border-color: #ef4444;
+  background-color: #fff5f5;
+}
+
+/* --- MODIFIED ERROR STYLES --- */
+.login-error-message {
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: -0.5rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  padding-left: 5px;
+
+  /* 1. Add fixed height and line-height to reserve space */
+  height: 1.2em; /* This reserves space for one line of text */
+  line-height: 1.2em;
+
+  /* 2. Make text transparent by default (when empty) */
+  color: transparent;
+
+  /* 3. Add a small transition for a fade-in effect */
+  transition: color 0.2s ease;
+
+  /* 4. Make it clickable as requested */
+  cursor: pointer;
+}
+
+/* NEW RULE: 
+  When the <p> tag is NOT empty (i.e., it has error text)
+  this rule applies and makes the text red.
+*/
+.login-error-message:not(:empty) {
+  color: #ef4444; /* Make the text visible (red) */
+}
+/* --- END MODIFIED ERROR STYLES --- */
+
 .input-icon,
 .toggle-password {
   display: flex;
@@ -102,7 +140,7 @@ body.login-page {
 
 .forgot-password {
   margin-top: 0.5rem;
-  margin-bottom: 3.5rem;
+  margin-bottom: 2.7rem;
   font-size: 14px;
   color: #0437f2;
   font-family: "Chillax", sans-serif;
