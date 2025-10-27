@@ -1,3 +1,5 @@
+# In forecasting.py, replace the entire file content with this
+
 import numpy as np, pandas as pd, folium
 from flask import jsonify, request, session, Response
 from datetime import datetime
@@ -26,7 +28,7 @@ def rf_monthly_payload(table: str):
     if len(ts) < 15:
         return {"success": True, "data": None, "message": "Not enough monthly history (need ≥15 months for lags)."}
 
-    # --- Feature Engineering (No changes here) ---
+    # --- Feature Engineering ---
     ts["lag_1_month"] = ts["accident_count"].shift(1)
     ts["lag_2_month"] = ts["accident_count"].shift(2)
     ts["lag_3_month"] = ts["accident_count"].shift(3)
@@ -103,7 +105,6 @@ def rf_monthly_payload(table: str):
 
         current_features = next_row[feature_cols].copy()
     
-    # ... (rest of the function is the same) ...
     last_actual_year = ts.index.max().year
     last_year_mask = ts.index.year == last_actual_year
     last_year_actuals = ts.loc[last_year_mask, "accident_count"]
@@ -116,20 +117,27 @@ def rf_monthly_payload(table: str):
     }
     return {"success": True, "data": payload}
 
+
+# === FIX: Add `where_sql` and `params` to the function signature ===
 def build_forecast_map_html(
     table: str,
+    where_sql: str = "",
+    params: dict = None,
     start_str: str = "", end_str: str = "", time_from: str = "", time_to: str = "",
     legacy_time: str = "Live", barangay_filter: str = ""
 ):
     engine = get_engine()
     DEFAULT_LOCATION = [14.5995, 120.9842]
 
-    # --- Initial Full Data Load ---
+    # === FIX: Use read_sql_query with the where_sql clause for efficient filtering ===
     try:
-        df_full = pd.read_sql_table(table, engine)
-    except ValueError:
+        # We read all columns initially because the model evaluation part needs them
+        sql = f"SELECT * FROM `{table}` {where_sql}"
+        df_full = pd.read_sql_query(sql, engine, params=params)
+    except Exception as e:
+        print(f"Error loading data for table '{table}': {e}")
         m = folium.Map(location=DEFAULT_LOCATION, zoom_start=11)
-        folium.Marker(DEFAULT_LOCATION, popup=f"Error: Table '{table}' could not be loaded.").add_to(m)
+        folium.Marker(DEFAULT_LOCATION, popup=f"Error: Could not load data from table '{table}'.").add_to(m)
         return m.get_root().render()
 
     if df_full.empty:
@@ -137,39 +145,29 @@ def build_forecast_map_html(
         return m.get_root().render()
         
     # ==============================================================================
-    # PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION (WITH CORRECT FEATURES)
+    # PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION
     # ==============================================================================
-    
     print(f"\n--- [EVALUATION] Generating Baseline XGBoost Performance for table: '{table}' (All Hours) ---")
-    
-    # --- Feature Engineering on FULL UNFILTERED Data ---
     df_eval = df_full.copy()
     df_eval["DATE_COMMITTED"] = pd.to_datetime(df_eval["DATE_COMMITTED"], errors="coerce")
     df_eval["ACCIDENT_HOTSPOT"] = pd.to_numeric(df_eval["ACCIDENT_HOTSPOT"], errors="coerce").fillna(-1).astype(int)
     df_eval = df_eval.dropna(subset=["DATE_COMMITTED", "ACCIDENT_HOTSPOT"])
 
-    # --- START OF THE FIX: Replicate the Notebook's Aggregation ---
-    # Dynamically find all TIME_CLUSTER columns
     time_cluster_cols = [c for c in df_eval.columns if 'TIME_CLUSTER' in str(c)]
     for col in time_cluster_cols:
-        # This forces the columns to be numbers, turning any errors into 0.
         df_eval[col] = pd.to_numeric(df_eval[col], errors='coerce').fillna(0).astype(int)
     
-    agg_dict_eval = {col: 'sum' for col in time_cluster_cols}
-    agg_dict_eval['OFFENSE'] = 'size' # Use a temporary column for counting
+    agg_dict = {col: 'sum' for col in time_cluster_cols}
+    agg_dict['OFFENSE'] = 'size'
 
-    # Group by and aggregate, which is the core logic from the notebook
     ts_data_unfiltered = (
         df_eval.set_index('DATE_COMMITTED')
         .groupby(['ACCIDENT_HOTSPOT', pd.Grouper(freq='ME')])
-        .agg(agg_dict_eval)
+        .agg(agg_dict)
         .rename(columns={'OFFENSE': 'accident_count'})
         .reset_index()
     )
-    # --- END OF THE FIX ---
-
     ts_data_unfiltered.sort_values(by=['ACCIDENT_HOTSPOT', 'DATE_COMMITTED'], inplace=True)
-
     ts_data_unfiltered['lag_1_month'] = ts_data_unfiltered.groupby('ACCIDENT_HOTSPOT')['accident_count'].shift(1)
     ts_data_unfiltered['rolling_mean_3_months'] = ts_data_unfiltered.groupby('ACCIDENT_HOTSPOT')['accident_count'].shift(1).rolling(window=3).mean()
     ts_data_unfiltered['month_of_year'] = ts_data_unfiltered['DATE_COMMITTED'].dt.month
@@ -177,22 +175,18 @@ def build_forecast_map_html(
     ts_data_unfiltered = ts_data_unfiltered.dropna().reset_index(drop=True)
 
     if not ts_data_unfiltered.empty:
-        # The feature set `X_eval` will now correctly include the TIME_CLUSTER columns
         y_eval = ts_data_unfiltered['accident_count']
         X_eval = ts_data_unfiltered.drop(columns=['accident_count','DATE_COMMITTED'])
-        
         X_train, X_test, y_train, y_test = train_test_split(X_eval, y_eval, test_size=0.2, shuffle=False)
 
         if not X_test.empty:
             eval_model = XGBRegressor(objective='count:poisson', n_estimators=1000, learning_rate=0.01, max_depth=4, random_state=42)
             eval_model.fit(X_train, y_train, verbose=False)
             y_pred_test = eval_model.predict(X_test)
-
             mae = mean_absolute_error(y_test, y_pred_test)
             mape = mean_absolute_percentage_error(y_test[y_test > 0], y_pred_test[y_test > 0]) * 100 if np.any(y_test > 0) else 0.0
             r2 = r2_score(y_test, y_pred_test)
             rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-
             print(f"Mean Absolute Error (MAE): {mae:.2f}")
             print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
             print(f"R-squared (R²): {r2:.2f}")
@@ -205,9 +199,6 @@ def build_forecast_map_html(
     # ==============================================================================
     # PART 2: FILTERED FORECASTING FOR THE MAP VISUALIZATION
     # ==============================================================================
-    # This part remains the same, as it correctly uses a simpler feature set
-    # appropriate for data that has already been filtered by time.
-    
     df = df_full.copy() 
     df["DATE_COMMITTED"] = pd.to_datetime(df["DATE_COMMITTED"], errors="coerce")
     df = df.dropna(subset=["DATE_COMMITTED"]).copy()
@@ -216,6 +207,8 @@ def build_forecast_map_html(
     df["HOUR_COMMITTED"] = df["HOUR_COMMITTED"].astype(int)
     df["ACCIDENT_HOTSPOT"] = pd.to_numeric(df["ACCIDENT_HOTSPOT"], errors="coerce").fillna(-1).astype(int)
     
+    # This part of the logic remains unchanged, as it performs the time-based filtering correctly
+    # on the already-filtered df_full
     def parse_hour(hmm: str) -> int | None:
         if not hmm: return None
         try: return int(hmm.split(":")[0])
@@ -257,14 +250,29 @@ def build_forecast_map_html(
         if barangays:
             df_filtered = df_filtered[df_filtered['BARANGAY'].isin(barangays)].copy()
 
+    safe_center_lat = df["LATITUDE"].astype(float).mean(); safe_center_lon = df["LONGITUDE"].astype(float).mean()
+    if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
+
     if df_filtered.empty:
-        safe_center_lat = df["LATITUDE"].astype(float).mean(); safe_center_lon = df["LONGITUDE"].astype(float).mean()
-        if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
         m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
         return m.get_root().render()
         
-    grouping_cols_fcst = ['ACCIDENT_HOTSPOT', pd.Grouper(key='DATE_COMMITTED', freq='ME')]
-    ts_counts_fcst = (df_filtered.groupby(grouping_cols_fcst).size().to_frame('accident_count').reset_index())
+    # --- Consistent aggregation logic from Part 1 ---
+    time_cluster_cols_fcst = [c for c in df_filtered.columns if 'TIME_CLUSTER' in str(c)]
+    for col in time_cluster_cols_fcst:
+        df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce').fillna(0).astype(int)
+
+    agg_dict_fcst = {col: 'sum' for col in time_cluster_cols_fcst}
+    agg_dict_fcst['OFFENSE'] = 'size' 
+
+    ts_aggregated_fcst = (
+        df_filtered.set_index('DATE_COMMITTED')
+        .groupby(['ACCIDENT_HOTSPOT', pd.Grouper(freq='ME')])
+        .agg(agg_dict_fcst)
+        .rename(columns={'OFFENSE': 'accident_count'})
+        .reset_index()
+    )
+
     all_clusters_fcst = pd.DataFrame({'ACCIDENT_HOTSPOT': df_filtered['ACCIDENT_HOTSPOT'].unique()})
     
     if df_filtered.empty or df_filtered['DATE_COMMITTED'].isnull().all():
@@ -275,8 +283,10 @@ def build_forecast_map_html(
     full_grid_fcst = pd.MultiIndex.from_product(
         [all_clusters_fcst['ACCIDENT_HOTSPOT'], month_range_fcst], names=['ACCIDENT_HOTSPOT','DATE_COMMITTED']
     ).to_frame(index=False)
-    ts_data_for_forecast = (pd.merge(full_grid_fcst, ts_counts_fcst, on=['ACCIDENT_HOTSPOT','DATE_COMMITTED'], how='left')
-               .fillna({'accident_count': 0}).sort_values(['ACCIDENT_HOTSPOT','DATE_COMMITTED']).reset_index(drop=True))
+    
+    ts_data_for_forecast = pd.merge(
+        full_grid_fcst, ts_aggregated_fcst, on=['ACCIDENT_HOTSPOT','DATE_COMMITTED'], how='left'
+    ).fillna(0).sort_values(['ACCIDENT_HOTSPOT','DATE_COMMITTED']).reset_index(drop=True)
 
     ts_data_for_forecast['lag_1_month'] = ts_data_for_forecast.groupby('ACCIDENT_HOTSPOT')['accident_count'].shift(1)
     ts_data_for_forecast['rolling_mean_3_months'] = ts_data_for_forecast.groupby('ACCIDENT_HOTSPOT')['accident_count'].shift(1).rolling(window=3).mean()
@@ -285,8 +295,6 @@ def build_forecast_map_html(
     ts_data_for_forecast = ts_data_for_forecast.dropna().reset_index(drop=True)
 
     if ts_data_for_forecast.empty:
-        safe_center_lat = df["LATITUDE"].astype(float).mean(); safe_center_lon = df["LONGITUDE"].astype(float).mean()
-        if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
         m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
         return m.get_root().render()
 
@@ -310,21 +318,24 @@ def build_forecast_map_html(
         months_to_forecast = (end_date.year - last_known_month.year)*12 + (end_date.month - last_known_month.month)
         last_rows_idx = ts_data_for_forecast.groupby('ACCIDENT_HOTSPOT')['DATE_COMMITTED'].idxmax()
         current_features_df = ts_data_for_forecast.loc[last_rows_idx].copy()
-        for need in ['lag_1_month','lag_2_month','lag_3_month']:
-            if need not in current_features_df.columns: current_features_df[need] = 0.0
+
         feature_names = X_final.columns.tolist()
+        
         preds_accum = []
         for i in range(months_to_forecast):
-            preds = final_model.predict(current_features_df[feature_names])
+            current_X = current_features_df[feature_names]
+            preds = final_model.predict(current_X)
+            
             next_month = last_known_month + pd.DateOffset(months=i+1)
             preds_accum.append(pd.DataFrame({'ACCIDENT_HOTSPOT': current_features_df['ACCIDENT_HOTSPOT'].values, 'DATE_COMMITTED': next_month, 'accident_count': preds}))
-            current_features_df['lag_3_month'] = current_features_df['lag_2_month']
-            current_features_df['lag_2_month'] = current_features_df['lag_1_month']
+            
             current_features_df['lag_1_month'] = preds
-            current_features_df['rolling_mean_3_months'] = current_features_df[['lag_1_month','lag_2_month','lag_3_month']].mean(axis=1)
+            current_features_df['rolling_mean_3_months'] = current_features_df.groupby('ACCIDENT_HOTSPOT')['lag_1_month'].transform(lambda x: x.rolling(3, 1).mean())
+            
             nm = next_month + pd.DateOffset(months=1)
             current_features_df['month_of_year'] = nm.month
             current_features_df['quarter_of_year'] = nm.quarter
+            
         future_forecast_df = pd.concat(preds_accum, ignore_index=True) if preds_accum else pd.DataFrame()
 
     if not hist_in_range.empty: hist_summary = (hist_in_range.groupby('ACCIDENT_HOTSPOT')['accident_count'].sum().to_frame('Total_Actual_Accidents').reset_index())
@@ -340,6 +351,8 @@ def build_forecast_map_html(
     final_map_data[['Total_Actual_Accidents','Total_Forecasted_Accidents']] = final_map_data[['Total_Actual_Accidents','Total_Forecasted_Accidents']].fillna(0).astype(float)
     final_map_data['Total_Events'] = final_map_data['Total_Actual_Accidents'] + final_map_data['Total_Forecasted_Accidents']
     
+    final_map_data = final_map_data[final_map_data['ACCIDENT_HOTSPOT'] != -1].copy()
+    
     nz = final_map_data.loc[final_map_data['Total_Events'] > 0, 'Total_Events']
     median_th, high_th = (nz.quantile(0.50), nz.quantile(0.75)) if not nz.empty else (0.0, 0.0)
     def color_for(v):
@@ -348,52 +361,34 @@ def build_forecast_map_html(
         if v <= high_th: return '#ffb200'
         return 'red'
      
-    safe_center_lat = df_filtered["LATITUDE"].astype(float).mean(); safe_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
-    if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
+    map_center_lat = df_filtered["LATITUDE"].astype(float).mean()
+    map_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
+    if pd.isna(map_center_lat) or pd.isna(map_center_lon):
+        map_center_lat, map_center_lon = DEFAULT_LOCATION
 
     font_css = """
     <style>
         @font-face {
         font-family: "Chillax";
-        /* --- UPDATE THIS PATH --- */
         src: url("/static/fonts/Chillax-Medium.ttf") format("truetype");
-        font-weight: 400;
-        font-style: normal;
+        font-weight: 400; font-style: normal;
         }
         @font-face {
         font-family: "Chillax";
-        /* --- UPDATE THIS PATH --- */
         src: url("/static/fonts/Chillax-Semibold.woff2") format("woff2");
-        font-weight: 700;
-        font-style: normal;
+        font-weight: 700; font-style: normal;
         }
-    </style>
-    """
-
-    # 2. Create your map
-    m = folium.Map(location=[safe_center_lat, safe_center_lon], zoom_start=13)
-
-    # 3. Add the font CSS to the map's <head>
+    </style>"""
+    m = folium.Map(location=[map_center_lat, map_center_lon], zoom_start=13)
     m.get_root().header.add_child(folium.Element(font_css))
-
-    # --- END: SOLUTION ---
         
-    # --- START: YOUR EXISTING LOOP ---
     for _, row in final_map_data.iterrows():
         if pd.isna(row['Center_Lat']) or pd.isna(row['Center_Lon']): 
             continue
-            
-        lat = float(row['Center_Lat'])
-        lng = float(row['Center_Lon'])
-        
-        # 1. Get Top 3 Barangays
+        lat, lng = float(row['Center_Lat']), float(row['Center_Lon'])
         top3 = row.get('Top_Barangays', None)
         barangay_str = ', '.join(top3) if isinstance(top3, list) else 'N/A'
-        
-        # 2. Create the Google Street View URL
         streetview_url = f"https://www.google.com/maps?q=&layer=c&cbll={lat},{lng}&cbp=12,90,0,0,5"
-
-        # 3. Create the new custom HTML for the popup
         popup_html = f"""
         <div style="font-family: 'Chillax', sans-serif; font-weight: 400; max-width: 250px; color: #1e1e1e;">
             <h4 style="margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid #eee; font-weight: 700; color: #1e1e1e;">
@@ -401,44 +396,18 @@ def build_forecast_map_html(
             </h4>
             <p style="margin: 5px 0;"><strong>Time:</strong> {display_hour_str}</p>
             <p style="margin: 5px 0;"><strong>Top Barangays:</strong> {barangay_str}</p>
-            
             <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-            
             {f"<p style='margin: 5px 0;'><strong>Actual (Hist.):</strong> {row['Total_Actual_Accidents']:.2f}</p>" if row['Total_Actual_Accidents'] > 0 else ""}
             {f"<p style='margin: 5px 0;'><strong>Forecasted:</strong> {row['Total_Forecasted_Accidents']:.2f}</p>" if row['Total_Forecasted_Accidents'] > 0 else ""}
-            
-            <a href="{streetview_url}" 
-            target="_blank" 
-            style="display: inline-block;
-                    width: 100%;
-                    box-sizing: border-box;
-                    text-align: center;
-                    margin-top: 10px;
-                    padding: 8px 12px;
-                    background-color: #0437F2; 
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    font-weight: 700;
-                    font-family: 'Chillax', sans-serif;">
+            <a href="{streetview_url}" target="_blank" style="display: inline-block; width: 100%; box-sizing: border-box; text-align: center; margin-top: 10px; padding: 8px 12px; background-color: #0437F2; color: white; text-decoration: none; border-radius: 5px; font-weight: 700; font-family: 'Chillax', sans-serif;">
                 Open Street View
             </a>
-        </div>
-        """
-        
-        # 4. Add the CircleMarker with the new popup
+        </div>"""
         color = color_for(float(row['Total_Events']))
         radius = 5 + (np.log1p(float(row['Total_Events'])) * 5)
-        
         folium.CircleMarker(
-            location=[lat, lng], 
-            radius=radius, 
-            popup=folium.Popup(popup_html, max_width=300), 
-            color=color, 
-            fill=True, 
-            fill_color=color, 
-            fill_opacity=0.8
+            location=[lat, lng], radius=radius, popup=folium.Popup(popup_html, max_width=300), 
+            color=color, fill=True, fill_color=color, fill_opacity=0.8
         ).add_to(m)
-    # --- END: YOUR EXISTING LOOP ---
         
     return m.get_root().render()
