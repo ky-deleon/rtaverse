@@ -203,11 +203,11 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
             h = int(h)
         except Exception:
             return "Midnight"
-        if 6 <= h <= 9:
+        if 6 <= h <= 11:
             return "Morning"
-        if 10 <= h <= 15:
+        if 12 <= h <= 17:
             return "Midday"
-        if 16 <= h <= 19:
+        if 18 <= h <= 23:
             return "Evening"
         return "Midnight"
 
