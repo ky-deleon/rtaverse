@@ -1535,7 +1535,10 @@ function initializeAppendTargetDropdown() {
 }
 
 // --- REPLACE the entire submitUpload() in database.js with this ---
+// --- REPLACE the entire submitUpload() in database.js with this ---
 async function submitUpload() {
+  // Get state variables first
+  const appendMode = !!document.getElementById("appendToggle")?.checked;
   const fileName = document.getElementById("fileNameInput").value?.trim();
   const file1 = document.getElementById("fileInput1").files[0] || null;
   const file2 = document.getElementById("fileInput2").files[0] || null;
@@ -1545,13 +1548,36 @@ async function submitUpload() {
     return;
   }
 
-  // 🚨 Duplicate file check
+  // 🚨 Duplicate file check (file1 vs file2)
   if (file1.name === file2.name) {
     alert(
       "Error: You uploaded the same Excel file twice. Please choose different files."
     );
     return;
   }
+
+  // --- START: New File Name Constraints ---
+  if (!appendMode) {
+    // Constraint 1: Check for empty file name
+    if (!fileName) {
+      alert("Error: Please provide a file name.");
+      return;
+    }
+
+    // Constraint 2: Check for duplicate file name
+    // Get all existing table names from the file cards
+    const existingTables = Array.from(
+      document.querySelectorAll(".file-card-big p")
+    ).map((p) => p.innerText.trim().toLowerCase());
+
+    if (existingTables.includes(fileName.toLowerCase())) {
+      alert(
+        `Error: A file named "${fileName}" already exists. Please choose a different name.`
+      );
+      return;
+    }
+  }
+  // --- END: New File Name Constraints ---
 
   try {
     const [cols1, cols2] = await Promise.all([
@@ -1593,12 +1619,13 @@ async function submitUpload() {
   }
 
   const fd = new FormData();
-  fd.append("file_name", fileName || "accidents");
+  // MODIFIED: We've already validated fileName, so no default is needed
+  fd.append("file_name", fileName);
   fd.append("file1", file1);
   fd.append("file2", file2);
 
-  const appendMode = !!document.getElementById("appendToggle")?.checked;
   const appendTarget = document.getElementById("appendTarget")?.value || "";
+
   fd.append("append_mode", appendMode ? "1" : "0");
   if (appendMode && appendTarget) fd.append("append_target", appendTarget);
 
