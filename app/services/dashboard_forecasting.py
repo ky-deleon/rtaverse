@@ -259,3 +259,104 @@ def run_numerical_forecast(
         "historical": results_df['historical'].tolist(),
         "forecast": results_df['forecast'].tolist(),
     }
+    
+# In app/services/dashboard_forecasting.py
+
+# In app/services/dashboard_forecasting.py
+
+def run_overall_timeseries_forecast(
+    table_name: str,
+    model_type: str = 'random_forest',
+    forecast_horizon: int = 12,
+    where_sql: str = "",
+    params: dict = None
+):
+    engine = get_engine()
+    
+    query_sql = f"SELECT `DATE_COMMITTED` FROM `{table_name}`"
+    base_conditions = "WHERE `DATE_COMMITTED` IS NOT NULL"
+    final_where_sql = base_conditions + (where_sql.replace("WHERE", "AND") if where_sql else "")
+    final_sql = f"{query_sql} {final_where_sql}"
+
+    df = pd.read_sql_query(final_sql, engine, params=params, parse_dates=["DATE_COMMITTED"])
+
+    if df.empty:
+        return {"success": False, "message": "No data found for the selected filters."}
+
+    # --- START OF FIX ---
+
+    # 1. Create the full time series. We will use this for the historical plot.
+    ts_full = df.set_index('DATE_COMMITTED').resample('ME').size().to_frame('count')
+
+    if len(ts_full) < 4:
+        return {"success": False, "message": "Not enough historical data (need at least 4 months)."}
+
+    # 2. Engineer features on the full series. This will create NaNs at the start.
+    ts_full['lag_1_month'] = ts_full['count'].shift(1)
+    ts_full['lag_2_month'] = ts_full['count'].shift(2)
+    ts_full['lag_3_month'] = ts_full['count'].shift(3)
+    ts_full['rolling_mean_3'] = ts_full['count'].shift(1).rolling(window=3, min_periods=1).mean()
+    ts_full['month'] = ts_full.index.month
+    
+    # 3. Create a separate, clean DataFrame for TRAINING by dropping the NaNs.
+    ts_train = ts_full.dropna().reset_index()
+
+    if ts_train.empty:
+        return {"success": False, "message": "Not enough data after feature engineering."}
+
+    # 4. Use the 'ts_train' DataFrame for training the model.
+    feature_cols = ['lag_1_month', 'lag_2_month', 'lag_3_month', 'rolling_mean_3', 'month']
+    X_train = ts_train[feature_cols]
+    y_train = ts_train['count']
+
+    model_display_name = 'Random Forest'
+    if model_type.lower() == 'decision_tree':
+        model = DecisionTreeRegressor(max_depth=5, random_state=42)
+        model_display_name = 'Decision Tree'
+    else:
+        model = RandomForestRegressor(n_estimators=100, random_state=42, min_samples_leaf=2, n_jobs=-1)
+    
+    model.fit(X_train, y_train)
+
+    # 5. The forecasting loop starts from the last known features of the TRAINING data.
+    future_predictions = []
+    last_known_features = ts_train[feature_cols].iloc[-1].to_dict()
+    current_features_df = pd.DataFrame([last_known_features])
+    last_known_date = ts_train['DATE_COMMITTED'].iloc[-1]
+    future_dates = pd.date_range(start=last_known_date + pd.DateOffset(months=1), periods=forecast_horizon, freq='ME')
+
+    for date in future_dates:
+        prediction = model.predict(current_features_df[feature_cols])[0]
+        future_predictions.append(int(np.round(prediction)))
+        prev_lag_1 = current_features_df['lag_1_month'].iloc[0]
+        prev_lag_2 = current_features_df['lag_2_month'].iloc[0]
+        new_features = {
+            'lag_1_month': prediction,
+            'lag_2_month': prev_lag_1,
+            'lag_3_month': prev_lag_2,
+            'rolling_mean_3': np.mean([prediction, prev_lag_1, prev_lag_2]),
+            'month': date.month
+        }
+        current_features_df = pd.DataFrame([new_features])
+
+    # 6. Prepare the response payload, using the ORIGINAL 'ts_full' for historical data.
+    historical_dates = ts_full.index.strftime('%Y-%m-%d').tolist()
+    historical_counts = ts_full['count'].astype(int).tolist()
+    forecast_dates = [d.strftime('%Y-%m-%d') for d in future_dates]
+
+    return {
+        "success": True,
+        "data": {
+            "historical": {
+                "dates": historical_dates,
+                "counts": historical_counts
+            },
+            "forecast": {
+                "dates": forecast_dates,
+                "counts": future_predictions
+            },
+            "model_used": model_display_name,
+            "horizon": forecast_horizon
+        }
+    }
+    # --- END OF FIX ---

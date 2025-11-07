@@ -1,21 +1,20 @@
 from flask import Blueprint, jsonify, request, session, Response
 from .auth import is_logged_in
 from ..services.database import list_tables
-from ..services.preprocessing import process_merge_and_save_to_db
+from ..services.preprocessing import process_merge_and_save_to_db, make_display_copy
 from ..services.forecasting import rf_monthly_payload, build_forecast_map_html
-from ..extensions import get_db_connection
-from ..services.dashboard_forecasting import run_categorical_forecast, run_numerical_forecast
+from ..extensions import get_db_connection, get_engine
+from ..services.dashboard_forecasting import run_categorical_forecast, run_numerical_forecast, run_overall_timeseries_forecast
 import traceback
 import pandas as pd
 import numpy as np
-from dateutil.relativedelta import relativedelta
-from ..services.preprocessing import make_display_copy # <--- ADD THIS
-from ..extensions import get_engine # <--- ADD THIS
-import pandas as pd # <--- ADD THIS
-import io # <--- ADD THIS
+import io
 import folium
 from mysql.connector.errors import ProgrammingError
-try: # <--- ADD THIS BLOCK
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+try:
     from fpdf import FPDF
 except ImportError:
     FPDF = None
@@ -23,13 +22,24 @@ except ImportError:
 api_bp = Blueprint("api", __name__)
 
 
-# Centralized, robust filtering logic to be used by all historical endpoints
-# In api.py, replace the existing `build_filter_query` function with this updated version.
-
 def build_filter_query(cols, req_obj=None):
     q = (req_obj or request).args
     where = []
-    params = {}  # Use a dictionary for named placeholders
+    params = {}
+
+    # Date Range (Format: YYYY-MM)
+    start_date_str = q.get("start")
+    end_date_str = q.get("end")
+    if "DATE_COMMITTED" in cols:
+        if start_date_str:
+            where.append("`DATE_COMMITTED` >= %(start_date)s")
+            params["start_date"] = f"{start_date_str}-01"
+
+        if end_date_str:
+            year, month = map(int, end_date_str.split('-'))
+            end_of_month_exclusive = (datetime(year, month, 1) + relativedelta(months=1)).strftime('%Y-%m-%d')
+            where.append("`DATE_COMMITTED` < %(end_date)s")
+            params["end_date"] = end_of_month_exclusive
 
     # Location
     location_str = (q.get("location") or "").strip()
@@ -45,17 +55,12 @@ def build_filter_query(cols, req_obj=None):
     gender_req = (q.get("gender") or "").strip().lower()
     if gender_req:
         gender_cat = next((c for c in ["GENDER", "SEX", "VICTIM_GENDER", "SEX_OF_VICTIM"] if c in cols), None)
-        
-        # --- START OF FIX ---
-        # Add 'unknown' to the dictionary to handle the new filter option.
         gender_onehot = {
             "male": next((c for c in cols if str(c).upper().endswith("MALE") and str(c).startswith(("GENDER_", "SEX_"))), None),
             "female": next((c for c in cols if str(c).upper().endswith("FEMALE") and str(c).startswith(("GENDER_", "SEX_"))), None),
             "unknown": next((c for c in cols if str(c).upper().endswith("UNKNOWN") and str(c).startswith(("GENDER_", "SEX_"))), None),
             "other": next((c for c in cols if str(c).upper().endswith("OTHER") and str(c).startswith(("GENDER_", "SEX_"))), None),
         }
-        # --- END OF FIX ---
-
         if gender_cat:
             where.append(f"UPPER(TRIM(`{gender_cat}`)) = %(gender)s")
             params["gender"] = gender_req.upper()
@@ -96,7 +101,8 @@ def build_filter_query(cols, req_obj=None):
             for i, alc_val in enumerate(alcohol_raw):
                 params[f"alc_{i}"] = alc_val.upper()
             where.append(f"UPPER(TRIM(`{cat_col}`)) IN ({', '.join(alc_placeholders)})")
-    
+
+    # Offense Type
     offense_raw = [s.strip() for s in (q.get("offense_type") or "").split(",") if s.strip()]
     if offense_raw:
         offense_col = next((c for c in ["OFFENSE", "OFFENSE_TYPE"] if c in cols), None)
@@ -129,31 +135,43 @@ def build_filter_query(cols, req_obj=None):
     where_sql = " WHERE " + " AND ".join(where) if where else ""
     return where_sql, params
 
-# The rest of the api.py file remains the same...
-
+# --- START OF FIX: This entire function is replaced ---
 @api_bp.route("/accidents_by_hour", methods=["GET"])
 def accidents_by_hour():
-    if not is_logged_in(): return jsonify(success=False, message="Not authorized"), 401
+    if not is_logged_in():
+        return jsonify(success=False, message="Not authorized"), 401
     table = session.get("forecast_table", "accidents")
     try:
-        conn = get_db_connection(); cur = conn.cursor()
+        conn = get_db_connection()
+        cur = conn.cursor()
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
         cols = {str(r[0]) for r in cur.fetchall()}
 
         hour_expr = "CAST(`HOUR_COMMITTED` AS SIGNED)" if "HOUR_COMMITTED" in cols else "HOUR(`TIME_COMMITTED`)" if "TIME_COMMITTED" in cols else "HOUR(`DATE_COMMITTED`)"
         
-        # FIX: The original historical endpoints did not use the new build_filter_query. Now they do.
         where_sql, params = build_filter_query(cols)
         
-        # The database driver (PyMySQL) can handle dicts, so we pass it directly.
         sql = f"SELECT {hour_expr} AS hr, COUNT(*) AS cnt FROM `{table}` {where_sql} GROUP BY hr ORDER BY hr"
         cur.execute(sql, params)
         rows = cur.fetchall()
-        cur.close(); conn.close()
+        cur.close()
+        conn.close()
         
         counts_by_hr = {int(hr): int(cnt) for hr, cnt in rows if hr is not None}
-        hour_from = int(request.args.get("hour_from", 0))
-        hour_to = int(request.args.get("hour_to", 23))
+
+        # Robustly get the hour range for the chart's x-axis
+        hour_from_str = request.args.get("hour_from")
+        hour_to_str = request.args.get("hour_to")
+
+        # If a time filter is active, use that range; otherwise, use the full 24-hour day.
+        # This prevents errors from trying to convert `None` to an integer.
+        if hour_from_str is not None and hour_to_str is not None:
+            hour_from = int(hour_from_str)
+            hour_to = int(hour_to_str)
+        else:
+            hour_from = 0
+            hour_to = 23
+            
         hours = list(range(hour_from, hour_to + 1))
         counts = [counts_by_hr.get(h, 0) for h in hours]
         
@@ -533,16 +551,81 @@ def rf_monthly_forecast():
     table = (request.args.get("table") or "accidents").strip()
     return jsonify(**rf_monthly_payload(table))
 
+@api_bp.route("/forecast/overall_timeseries")
+def forecast_overall_timeseries():
+    if not is_logged_in(): 
+        return jsonify(success=False, message="Not authorized"), 401
+        
+    table = session.get("forecast_table", "accidents")
+    model = request.args.get("model", "random_forest")
+    horizon = int(request.args.get("horizon", 12))
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM `{table}`")
+        cols = {str(r[0]) for r in cur.fetchall()}
+        cur.close()
+        conn.close()
 
-# --- In api.py ---
-# --- Ensure your /api/folium_map route matches this complete version ---
+        where_sql, params = build_filter_query(cols)
+
+        result = run_overall_timeseries_forecast(
+            table_name=table,
+            model_type=model,
+            forecast_horizon=horizon,
+            where_sql=where_sql,
+            params=params
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
+
+@api_bp.route("/overall_timeseries")
+def overall_timeseries():
+    if not is_logged_in(): 
+        return jsonify(success=False, message="Not authorized"), 401
+        
+    table = session.get("forecast_table", "accidents")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM `{table}`")
+        cols = {str(r[0]) for r in cur.fetchall()}
+        cur.close()
+
+        where_sql, params = build_filter_query(cols)
+
+        # Use pandas to easily resample the data by month
+        sql = f"SELECT DATE_COMMITTED FROM `{table}` {where_sql}"
+        df = pd.read_sql_query(sql, conn, params=params, parse_dates=["DATE_COMMITTED"])
+        conn.close()
+
+        if df.empty:
+            return jsonify(success=True, data={"dates": [], "counts": []})
+
+        # Resample to get monthly counts
+        ts = df.set_index('DATE_COMMITTED').resample('ME').size().to_frame('count')
+
+        # Format for JSON response
+        data = {
+            "dates": ts.index.strftime('%Y-%m-%d').tolist(),
+            "counts": ts['count'].astype(int).tolist()
+        }
+        
+        return jsonify(success=True, data=data)
+        
+    except Exception as e:
+        import traceback
+        return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
+
+
+
 import traceback
-from datetime import datetime
-from dateutil.relativedelta import relativedelta # You may need to run: pip install python-dateutil
 
-# --- In api.py, replace the whole function with this ---
-
-# In app/routes/api.py
 
 @api_bp.route("/folium_map")
 def folium_map():

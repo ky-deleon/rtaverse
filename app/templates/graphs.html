@@ -1,619 +1,448 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RTAverse</title>
-    <link rel="stylesheet" href="../static/styles.css" />
-    <link rel="stylesheet" href="../static/filter-graphs.css" />
-    <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
-  </head>
 
-  <body>
-    <div class="pagesize">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div>
-          <div class="sidebar-header">
-            <button
-              class="sidebar-toggle"
-              onclick="toggleSidebar()"
-              aria-label="Toggle sidebar"
-            >
-              <svg
-                id="toggle-icon"
-                xmlns="http://www.w3.org/2000/svg"
-                height="24px"
-                viewBox="0 -960 960 960"
-                width="24px"
-                fill="#0437F2"
-              >
-                <path
-                  d="M689-365v-230q0-21-19.5-29.5T635-618l-93 93q-19 19-19 45t19 45l93 93q15 15 34.5 6.5T689-365ZM212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h536q53 0 89.5 36.5T874-748v536q0 53-36.5 89.5T748-86H212Zm226-126h310v-536H438v536Z"
-                />
-              </svg>
-            </button>
-            <img
-              src="../static/logo.ico"
-              alt="RTAverse Logo"
-              class="sidebar-logo"
-            />
-            <p class="app-title">RTAVERSE</p>
-          </div>
-          <div class="gradient-line"></div>
-          <nav class="nav">
-            <a href="{{ url_for('auth.dashboard') }}" class="nav-item">
-              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
-                <path
-                  d="M126-212v-342q0-30 13-56.5t37-44.5l228-171q34-26 76-26t76 26l228 171q24 18 37 44.5t13 56.5v342q0 53-36.5 89.5T708-86h-77q-26 0-44.5-18.5T568-149v-196q0-26-18.5-44.5T505-408h-50q-26 0-44.5 18.5T392-345v196q0 26-18.5 44.5T329-86h-77q-53 0-89.5-36.5T126-212Z"
-                />
-              </svg>
-              <span>Dashboard</span>
-            </a>
-            <a href="{{ url_for('views.graphs') }}" class="nav-item active">
-              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
-                <path
-                  d="M706-126q-26 0-44.5-18.5T643-189v-202q0-26 18.5-44.5T706-454h65q26 0 44.5 18.5T834-391v202q0 26-18.5 44.5T771-126h-65Zm-258 0q-26 0-44.5-18.5T385-189v-582q0-26 18.5-44.5T448-834h64q26 0 44.5 18.5T575-771v582q0 26-18.5 44.5T512-126h-64Zm-259 0q-26 0-44.5-18.5T126-189v-382q0-26 18.5-44.5T189-634h65q26 0 44.5 18.5T317-571v382q0 26-18.5 44.5T254-126h-65Z"
-                />
-              </svg>
-              <span>Graphs</span>
-            </a>
-            <a href="{{ url_for('views.database_page') }}" class="nav-item">
-              <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
-                <path
-                  d="M479-523q165 0 280-52t115-124q0-73-115-124t-280-51q-165 0-279 51T86-699q0 72 114 124t279 52Zm1 88q72 0 142.5-12.5T749-483q56-23 91-55.5t35-72.5v130q0 40-35 72.5T749-353q-56 23-126.5 35.5T480-305q-72 0-142.5-12.5T211-353q-56-23-91-55.5T85-481v-130q0 40 35 72.5t91 55.5q56 23 126.5 35.5T480-435Zm0 218q72 0 142.5-12.5t126.5-36q56-23.5 91-56t35-72.5v131q0 40-35 72.5T749-135q-56 23-126.5 35.5T480-87q-72 0-142.5-12.5T211-135q-56-23-91-55.5T85-263v-131q0 40 35 72.5t91 55.5q56 23 126.5 36T480-217Z"
-                />
-              </svg>
-              <span>Database</span>
-            </a>
-          </nav>
-        </div>
-        <a href="#" class="nav-item logout" onclick="openLogoutModal(event)">
-          <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
-            <path
-              d="M212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h213q26 0 44.5 18.5T488-811q0 26-18.5 44.5T425-748H212v536h213q26 0 44.5 18.5T488-149q0 26-18.5 44.5T425-86H212Zm423-331H415q-26 0-44.5-18.5T352-480q0-26 18.5-44.5T415-543h220l-52-52q-18-18-18-44t18-44q18-19 43.5-19t44.5 19l159 159q18 19 18 44t-18 44L671-277q-18 19-44 19t-44-19q-18-18-18-44t18-44l52-52Z"
-            />
-          </svg>
-          <span>Logout</span>
-        </a>
-      </aside>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RTAverse</title>
+  <link rel="stylesheet" href="../static/styles.css" />
+  <link rel="stylesheet" href="../static/filter-graphs.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="icon" type="image/x-icon" href="../static/logo.ico" />
+</head>
 
-      <!-- Main Content -->
-      <main class="main-content">
-        <div class="breadcrumbs">Pages / Graphs</div>
-        <div class="header">
-          <p class="page-title">Data Visualizations</p>
-          {% if not no_data_html %}
-          <div class="header-controls">
-            <button id="downloadPdfBtn" class="header-action-btn">
-              Download as PDF
-            </button>
-            <button class="filter-btn" onclick="openFilterModal()">
-              <svg
-                class="filter-icon"
-                xmlns="http://www.w3.org/2000/svg"
-                height="24px"
-                viewBox="0 -960 960 960"
-                width="24px"
-                fill="#0437F2"
-              >
-                <path
-                  d="M440-126q-30 0-52-22t-22-52v-228L142-716q-29-37-9-77.5t67-40.5h560q47 0 67 40.5t-9 77.5L594-428v239q0 27-18 45t-45 18h-91Z"
-                />
-              </svg>
-            </button>
-          </div>
-          {% endif %}
-        </div>
-
-        {% if no_data_html %} {{ no_data_html|safe }} {% else %}
-
-        <!-- NEW: Forecast Controls -->
-        <section class="forecast-controls">
-          <div class="forecast-toggle-wrapper">
-            <label for="forecastModeToggle" class="switch-label"
-              >Forecast Mode</label
-            >
-            <label class="switch">
-              <input type="checkbox" id="forecastModeToggle" />
-              <span class="slider round"></span>
-            </label>
-          </div>
-
-          <div id="forecastOptions" class="forecast-options hidden">
-            <div class="forecast-option-group">
-              <label for="forecastModelSelect">Model</label>
-              <select
-                id="forecastModelSelect"
-                class="filter-select"
-                style="width: 150px; padding: 8px"
-              >
-                <option value="random_forest" selected>Random Forest</option>
-                <!-- START: Text Change -->
-                <option value="adaboost">Decision Tree</option>
-                <!-- END: Text Change -->
-              </select>
-            </div>
-            <div class="forecast-option-group">
-              <label for="forecastHorizonInput">Horizon (Months)</label>
-              <input
-                type="number"
-                id="forecastHorizonInput"
-                class="pill"
-                value="12"
-                min="1"
-                max="36"
-              />
-            </div>
-          </div>
-        </section>
-
-        <!-- KPI Cards -->
-        <section class="cards-grid">
-          <div class="kpicard">
-            <svg
-              class="kpicard-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              height="24px"
-              viewBox="0 -960 960 960"
-              width="24px"
-              fill="#FFFFFF"
-            >
+<body>
+  <div class="pagesize">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-header">
+          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+            <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+              fill="#0437F2">
               <path
-                d="M326-773q-18 18-44 18t-44-18l-29-28q-18-18-18-44t18-44.5q18-18.5 44-18.5t45 19l28 28q18 18 18.5 43.5T326-773Zm308 0q-18-18-18-44t18-44l29-29q18-18 44-18t44 19q18 19 18.5 44.5T751-801l-29 28q-18 18-44 18t-44-18Zm-154-44q-26 0-44.5-18.5T417-880v-51q0-26 18.5-44.5T480-994q26 0 44.5 18.5T543-931v51q0 26-18.5 44.5T480-817ZM86-48v-299q0-11 1.5-21t5.5-20l72-204q14-38 45.5-61t72.5-23h394q41 0 72.5 23t45.5 61l72 204q4 10 5.5 20t1.5 21v300q0 32.5-22.75 55.25T796 31q-32 0-55.5-23.5T717-48v-1H243v2q0 32.5-22.75 55.25T165 31q-32 0-55.5-23.5T86-48Zm160-394h468l-37-108H283l-37 108Zm60 234q25 0 42.5-17.5T366-268q0-25-17.5-42.5T306-328q-25 0-42.5 17.5T246-268q0 25 17.5 42.5T306-208Zm348 0q25 0 42.5-17.5T714-268q0-25-17.5-42.5T654-328q-25 0-42.5 17.5T594-268q0 25 17.5 42.5T654-208Z"
-              />
+                d="M689-365v-230q0-21-19.5-29.5T635-618l-93 93q-19 19-19 45t19 45l93 93q15 15 34.5 6.5T689-365ZM212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h536q53 0 89.5 36.5T874-748v536q0 53-36.5 89.5T748-86H212Zm226-126h310v-536H438v536Z" />
             </svg>
-            <div class="kpicard-label">Total Accidents</div>
-            <div id="kpiAccidents" class="kpicard-value">—</div>
-          </div>
-          <div class="kpicard">
-            <svg
-              class="kpicard-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              height="24px"
-              viewBox="0 -960 960 960"
-              width="24px"
-              fill="#FFFFFF"
-            >
-              <path
-                d="m780-490-40 39q-19 18-44 18t-44-19q-19-19-19-44.5t19-44.5l39-39-39-39q-19-18-19-44t19-45q19-19 44.5-19t44.5 19l39 40 39-39q18-19 44-19.5t45 18.5q19 19 19 44.5T908-619l-39 39 39 40q18 19 18.5 44T908-452q-19 19-44.5 19T819-452l-39-38Zm-417-7q-81 0-137.5-56.5T169-691q0-81 56.5-137T363-884q81 0 137.5 56T557-691q0 81-56.5 137.5T363-497ZM9-235v-22q0-43 22.5-79.5T92-392q65-32 133-48.5T363-457q72 0 140 16t131 48q38 19 60.5 55t22.5 81v22q0 53-36.5 89.5T591-109H135q-53 0-89.5-36.5T9-235Z"
-              />
-            </svg>
-            <div class="kpicard-label">Total Victims</div>
-            <div id="kpiVictims" class="kpicard-value">—</div>
-          </div>
-          <div class="kpicard">
-            <svg
-              class="kpicard-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              height="24px"
-              viewBox="0 -960 960 960"
-              width="24px"
-              fill="#FFFFFF"
-            >
-              <path
-                d="M480-537q-81 0-137.5-56.5T286-731q0-81 56.5-137T480-924q81 0 137.5 56T674-731q0 81-56.5 137.5T480-537Zm-75 392q-10 0-16-6t-6-16q0-9 6-15.5t16-6.5h26q6 0 9 5t1 10l-8 19q-2 4-5 7t-8 3h-15ZM209-432q63-31 131.5-48T480-497q20 0 41 1.5t41 3.5q17 3 24.5 18.5T586-441l-58 108q-8 16-23 24.5t-32 8.5h-68q-55 0-94 39t-39 94q0 24 7.5 45.5T301-83q14 16 9 32.5T290-34H189q-26 0-44.5-18.5T126-97v-200q0-43 22.5-79t60.5-56Zm625 272q0 53-35.5 89.5T718-34h-1q-8 0-13.5-5.5T698-53v-355q0-17 14-27t30-2q2 2 4.5 2.5t4.5 1.5q38 20 60.5 56.5T834-297v137Z"
-              />
-            </svg>
-            <div class="kpicard-label">Avg Victim/Accident</div>
-            <div id="kpiAvgVictims" class="kpicard-value">—</div>
-          </div>
-          <div class="kpicard">
-            <svg
-              class="kpicard-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              height="24px"
-              viewBox="0 -960 960 960"
-              width="24px"
-              fill="#FFFFFF"
-            >
-              <path
-                d="M169-162v-111q-31-14-57-48.5T86-404v-280q0-26 18.5-44.5T149-747h151q26 0 44.5 18.5T363-684v280q0 48-25.5 82.5T281-273v111h24q24 0 41 17t17 41q0 24-17 41t-41 17H144q-24 0-41-17t-17-41q0-24 17-41t41-17h25Zm33-369h45v-100h-45v100ZM533-46q-46 0-78-32t-32-78v-377q0-32 14.5-60t40.5-44l25-15q12-8 21-19t9-27v-146q0-29 22-49.5t53-20.5h123q31 0 52.5 20.5T805-844v146q0 14 6 26.5t18 19.5l28 15q27 15 42 43.5t15 60.5v377q0 46-32 78t-78 32H533Zm116-712h40v-40h-40v40ZM539-482h259v-57l-31-22q-31-22-54.5-50T689-677v-1h-40v1q0 38-20.5 67T575-561l-36 22v57Zm0 320h259v-80H539v80Z"
-              />
-            </svg>
-            <div class="kpicard-label">Alcohol Involvement</div>
-            <div id="kpiAlcoholPct" class="kpicard-value">—</div>
-          </div>
-          <div class="kpicard col-span-2">
-            <div class="gender-kpis">
-              <div class="gender-item">
-                <div class="genderkpicard-label">
-                  <svg
-                    class="gender-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="24px"
-                    viewBox="0 -960 960 960"
-                    width="24px"
-                    fill="#FFFFFF"
-                  >
-                    <path
-                      d="M831-775v160q0 26-18.5 44.5T768-552q-26 0-44.5-18.5T705-615v-8L583-502q17 28 24.5 59t7.5 63q0 101-71 172t-172 71q-101 0-172-71t-71-172q0-101 71-172t172-71q32 0 63 8t58 25l122-122h-7q-26 0-44.5-18.5T545-775q0-26 18.5-44.5T608-838h160q26 0 44.5 18.5T831-775ZM372-497q-49 0-83 34t-34 83q0 49 34 83t83 34q49 0 83-34t34-83q0-49-34-83t-83-34Z"
-                    />
-                  </svg>
-                  Male
-                </div>
-                <div
-                  id="kpiMale"
-                  class="genderkpicard-value"
-                  style="margin-top: 5px"
-                >
-                  —
-                </div>
-              </div>
-              <div class="gender-item">
-                <div class="genderkpicard-label">
-                  <svg
-                    class="gender-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="24px"
-                    viewBox="0 -960 960 960"
-                    width="24px"
-                    fill="#FFFFFF"
-                  >
-                    <path
-                      d="M417-163h-22q-24 0-41-17.5T337-222q0-24 17.5-41t41.5-17h21v-66q-80-21-130-86t-50-148q0-101 71-172t172-71q101 0 172 71t71 172q0 83-50 148t-130 86v66h22q24 0 41 17t17 41q0 24-17 41.5T565-163h-22v17q0 26-18.5 44.5T480-83q-26 0-44.5-18.5T417-146v-17Zm63-300q49 0 83-34t34-83q0-49-34-83t-83-34q-49 0-83 34t-34 83q0 49 34 83t83 34Z"
-                    />
-                  </svg>
-                  Female
-                </div>
-                <div
-                  id="kpiFemale"
-                  class="genderkpicard-value"
-                  style="margin-top: 5px"
-                >
-                  —
-                </div>
-              </div>
-              <div class="gender-item">
-                <div class="genderkpicard-label">
-                  <svg
-                    class="gender-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="24px"
-                    viewBox="0 -960 960 960"
-                    width="24px"
-                    fill="#FFFFFF"
-                  >
-                    <path
-                      d="M568-662q0-33-22-54t-57-21q-23 0-42.5 8T412-704q-29 32-69.5 36T276-689q-20-20-20-51.5t21-57.5q38-48 92-73t120-25q109 0 176 64t67 167q0 51-27 102.5T621-451q-14 15-25.5 31T575-387q-16 30-38 46t-47 16q-32 0-55-21t-23-51q0-47 22-88.5t64-71.5q39-28 54.5-51.5T568-662ZM489-42q-46 0-78-32t-32-78q0-46 32-78.5t78-32.5q46 0 78.5 32.5T600-152q0 46-32.5 78T489-42Z"
-                    />
-                  </svg>
-                  Unknown
-                </div>
-                <div
-                  id="kpiUnknown"
-                  class="genderkpicard-value"
-                  style="margin-top: 5px"
-                >
-                  —
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div
-          id="forecastSpinner"
-          class="loader-container hidden"
-          style="min-height: 200px"
-        >
-          <div class="loader-spinner"></div>
-          <p>Generating forecast, please wait...</p>
+          </button>
+          <img src="../static/logo.ico" alt="RTAverse Logo" class="sidebar-logo" />
+          <p class="app-title">RTAVERSE</p>
         </div>
-
-        <div class="vis-grid">
-          <!-- Accidents by Hour -->
-          <div class="card">
-            <div
-              class="card-value"
-              data-chart-id="hourlyBar"
-              data-chart-title="Accidents by Hour of Day"
-            >
-              Accidents by Hour of Day
-            </div>
-            <div id="hourlyBar" style="height: 300px"></div>
-          </div>
-
-          <!-- Day of Week -->
-          <div class="card">
-            <div
-              class="card-value"
-              data-chart-id="dayOfWeekCombo"
-              data-chart-title="Accidents and Severity by Day of Week"
-            >
-              Accidents and Severity by Day of Week
-            </div>
-            <div id="dayOfWeekCombo" style="height: 300px"></div>
-          </div>
-
-          <!-- Top Barangays -->
-          <div class="card col-span-2">
-            <div
-              class="card-value"
-              data-chart-id="topBarangays"
-              data-chart-title="Top 10 Barangays by Accident Count"
-            >
-              Top 10 Barangays by Accident Count
-            </div>
-            <div id="topBarangays" style="height: 300px"></div>
-          </div>
-
-          <!-- Alcohol by Hour -->
-          <div class="card">
-            <div
-              class="card-value"
-              data-chart-id="alcoholByHour"
-              data-chart-title="Proportion of Alcohol Involvement by Hour"
-            >
-              Proportion of Alcohol Involvement by Hour
-            </div>
-            <div id="alcoholByHour" style="height: 300px"></div>
-          </div>
-
-          <!-- Victims by Age -->
-          <div class="card">
-            <div
-              class="card-value"
-              data-chart-id="victimsByAge"
-              data-chart-title="Total Victims by Age"
-            >
-              Total Victims by Age
-            </div>
-            <div id="victimsByAge" style="height: 300px"></div>
-          </div>
-
-          <!-- Offense Type -->
-          <div class="card col-span-2">
-            <div
-              class="card-value"
-              data-chart-id="offenseTypeChart"
-              data-chart-title="Accidents by Offense Type"
-            >
-              Accidents by Offense Type
-            </div>
-            <div id="offenseTypeChart" style="height: 300px"></div>
-            <div id="offenseTypeLegend" class="custom-legend"></div>
-          </div>
-        </div>
-        {% endif %}
-      </main>
-    </div>
-
-    <!-- Modals -->
-    <div id="logoutModal" class="modal hidden">
-      <div class="modal-content">
-        <p>Are you sure you want to logout?</p>
-        <div class="modal-buttons">
-          <button onclick="confirmLogout()">Yes</button>
-          <button onclick="closeLogoutModal()">No</button>
-        </div>
+        <div class="gradient-line"></div>
+        <nav class="nav">
+          <a href="{{ url_for('auth.dashboard') }}" class="nav-item">
+            <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+              <path
+                d="M126-212v-342q0-30 13-56.5t37-44.5l228-171q34-26 76-26t76 26l228 171q24 18 37 44.5t13 56.5v342q0 53-36.5 89.5T708-86h-77q-26 0-44.5-18.5T568-149v-196q0-26-18.5-44.5T505-408h-50q-26 0-44.5 18.5T392-345v196q0 26-18.5 44.5T329-86h-77q-53 0-89.5-36.5T126-212Z" />
+            </svg>
+            <span>Map</span>
+          </a>
+          <a href="{{ url_for('views.graphs') }}" class="nav-item active">
+            <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+              <path
+                d="M706-126q-26 0-44.5-18.5T643-189v-202q0-26 18.5-44.5T706-454h65q26 0 44.5 18.5T834-391v202q0 26-18.5 44.5T771-126h-65Zm-258 0q-26 0-44.5-18.5T385-189v-582q0-26 18.5-44.5T448-834h64q26 0 44.5 18.5T575-771v582q0 26-18.5 44.5T512-126h-64Zm-259 0q-26 0-44.5-18.5T126-189v-382q0-26 18.5-44.5T189-634h65q26 0 44.5 18.5T317-571v382q0 26-18.5 44.5T254-126h-65Z" />
+            </svg>
+            <span>Dashboard</span>
+          </a>
+          <a href="{{ url_for('views.database_page') }}" class="nav-item">
+            <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+              <path
+                d="M479-523q165 0 280-52t115-124q0-73-115-124t-280-51q-165 0-279 51T86-699q0 72 114 124t279 52Zm1 88q72 0 142.5-12.5T749-483q56-23 91-55.5t35-72.5v130q0 40-35 72.5T749-353q-56 23-126.5 35.5T480-305q-72 0-142.5-12.5T211-353q-56-23-91-55.5T85-481v-130q0 40 35 72.5t91 55.5q56 23 126.5 35.5T480-435Zm0 218q72 0 142.5-12.5t126.5-36q56-23.5 91-56t35-72.5v131q0 40-35 72.5T749-135q-56 23-126.5 35.5T480-87q-72 0-142.5-12.5T211-135q-56-23-91-55.5T85-263v-131q0 40 35 72.5t91 55.5q56 23 126.5 36T480-217Z" />
+            </svg>
+            <span>Database</span>
+          </a>
+        </nav>
       </div>
-    </div>
+      <a href="#" class="nav-item logout" onclick="openLogoutModal(event)">
+        <svg class="icon" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M212-86q-53 0-89.5-36.5T86-212v-536q0-53 36.5-89.5T212-874h213q26 0 44.5 18.5T488-811q0 26-18.5 44.5T425-748H212v536h213q26 0 44.5 18.5T488-149q0 26-18.5 44.5T425-86H212Zm423-331H415q-26 0-44.5-18.5T352-480q0-26 18.5-44.5T415-543h220l-52-52q-18-18-18-44t18-44q18-19 43.5-19t44.5 19l159 159q18 19 18 44t-18 44L671-277q-18 19-44 19t-44-19q-18-18-18-44t18-44l52-52Z" />
+        </svg>
+        <span>Logout</span>
+      </a>
+    </aside>
 
-    <div id="filterModal" class="filter-modal hidden">
-      <div class="filter-modal-content">
-        <button class="filter-close-btn" onclick="closeFilterModal()">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6B7280"
-            stroke-width="2"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-        <div class="filter-grid">
-          <div class="filter-group">
-            <label for="locationFilter" class="filter-label">Location(s)</label>
-            <div class="filter-dropdown">
-              <div id="multiSelectContainer" class="multi-select-container">
-                <div id="locationPillsContainer" class="pills-container"></div>
-                <input
-                  type="text"
-                  id="locationFilter"
-                  class="multi-select-input"
-                  placeholder="Select or search..."
-                  autocomplete="off"
-                />
-              </div>
-              <svg
-                class="dropdown-arrow"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#6B7280"
-                stroke-width="2"
-              >
-                <polyline points="6,9 12,15 18,9"></polyline>
-              </svg>
-              <div id="locationDropdownList" class="dropdown-list"></div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label for="genderFilter" class="filter-label">Gender</label>
-            <div class="filter-dropdown">
-              <input
-                type="text"
-                id="genderFilter"
-                class="filter-select"
-                placeholder="Select or search gender"
-                autocomplete="off"
-              />
-              <svg
-                class="dropdown-arrow"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#6B7280"
-                stroke-width="2"
-              >
-                <polyline points="6,9 12,15 18,9"></polyline>
-              </svg>
-              <div id="genderDropdownList" class="dropdown-list"></div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Hour of Day</label>
-            <div class="range-pills">
-              <input
-                id="hourFromBox"
-                class="pill"
-                type="number"
-                min="0"
-                max="23"
-                value="0"
-              /><span class="range-separator">to</span
-              ><input
-                id="hourToBox"
-                class="pill"
-                type="number"
-                min="0"
-                max="23"
-                value="23"
-              />
-            </div>
-            <div class="dual-range">
-              <input
-                id="hourFrom"
-                type="range"
-                min="0"
-                max="23"
-                value="0"
-              /><input id="hourTo" type="range" min="0" max="23" value="23" />
-              <div class="track"></div>
-              <div id="hourFill" class="range-fill"></div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Age Range</label>
-            <div class="range-pills">
-              <input
-                id="ageFromBox"
-                class="pill"
-                type="number"
-                min="0"
-                max="100"
-                value="0"
-              /><span class="range-separator">to</span
-              ><input
-                id="ageToBox"
-                class="pill"
-                type="number"
-                min="0"
-                max="100"
-                value="100"
-              />
-            </div>
-            <div class="dual-range">
-              <input
-                id="ageFrom"
-                type="range"
-                min="0"
-                max="100"
-                value="0"
-              /><input id="ageTo" type="range" min="0" max="100" value="100" />
-              <div class="track"></div>
-              <div id="ageFill" class="range-fill"></div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Day of Week</label>
-            <div class="checkbox-group-wrapper" id="dowGroup">
-              <div class="checkbox-column">
-                <label
-                  ><input type="checkbox" value="1. Monday" /> Monday</label
-                >
-                <label
-                  ><input type="checkbox" value="2. Tuesday" /> Tuesday</label
-                >
-                <label
-                  ><input type="checkbox" value="3. Wednesday" />
-                  Wednesday</label
-                >
-                <label
-                  ><input type="checkbox" value="4. Thursday" /> Thursday</label
-                >
-              </div>
-              <div class="checkbox-column">
-                <label
-                  ><input type="checkbox" value="5. Friday" /> Friday</label
-                >
-                <label
-                  ><input type="checkbox" value="6. Saturday" /> Saturday</label
-                >
-                <label
-                  ><input type="checkbox" value="7. Sunday" /> Sunday</label
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Offense Type</label>
-            <div class="checkbox-group-wrapper" id="offenseGroup">
-              <div class="checkbox-column">
-                <label
-                  ><input type="checkbox" value="Property_and_Person" />
-                  Property & Person</label
-                >
-                <label
-                  ><input type="checkbox" value="Person_Injury_Only" /> Person
-                  Injury Only</label
-                >
-              </div>
-              <div class="checkbox-column">
-                <label
-                  ><input type="checkbox" value="Property_Damage_Only" />
-                  Property Damage Only</label
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Alcohol Involved</label>
-            <div class="checkbox-row" id="alcoholGroup">
-              <label><input type="checkbox" value="Yes" /> Yes</label>
-              <label><input type="checkbox" value="No" /> No</label>
-              <label><input type="checkbox" value="Unknown" /> Unknown</label>
-            </div>
-          </div>
-        </div>
-        <div class="filter-actions">
-          <button class="filter-clear-btn">Clear Filters</button>
-          <button class="filter-apply-btn">Apply Filters</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Clean Zoom Modal -->
-    <div id="zoomModal" class="zoom-modal">
-      <div class="zoom-modal-content">
-        <div class="zoom-modal-header">
-          <h2 id="zoomModalTitle" class="zoom-modal-title">Graph Title</h2>
-          <button onclick="closeZoomModal()" class="zoom-close-btn">
-            ✕ Close
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="breadcrumbs">Pages / Dashboard</div>
+      <div class="header">
+        <p class="page-title">Dashboard</p>
+        {% if not no_data_html %}
+        <div class="header-controls">
+          <button id="downloadPdfBtn" class="header-action-btn">
+            Download as PDF
+          </button>
+          <button class="filter-btn" onclick="openFilterModal()">
+            <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+              width="24px" fill="#0437F2">
+              <path
+                d="M440-126q-30 0-52-22t-22-52v-228L142-716q-29-37-9-77.5t67-40.5h560q47 0 67 40.5t-9 77.5L594-428v239q0 27-18 45t-45 18h-91Z" />
+            </svg>
           </button>
         </div>
-        <div class="zoom-chart-container">
-          <div id="zoomChartDisplay" style="width: 100%; height: 100%"></div>
+        {% endif %}
+      </div>
+
+      {% if no_data_html %} {{ no_data_html|safe }} {% else %}
+
+      <!-- Forecast Controls -->
+      <section class="forecast-controls">
+        <div class="forecast-toggle-wrapper">
+          <label for="forecastModeToggle" class="switch-label">Forecast Mode</label>
+          <label class="switch">
+            <input type="checkbox" id="forecastModeToggle" />
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div id="forecastOptions" class="forecast-options hidden">
+          <div class="forecast-option-group">
+            <label for="forecastModelSelect">Model</label>
+            <select id="forecastModelSelect" class="filter-select" style="width: 150px; padding: 8px">
+              <option value="random_forest" selected>Random Forest</option>
+              <option value="adaboost">Decision Tree</option>
+            </select>
+          </div>
+          <div class="forecast-option-group">
+            <label for="forecastHorizonInput">Horizon (Months)</label>
+            <input type="number" id="forecastHorizonInput" class="pill" value="12" min="1" max="36" />
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI Cards -->
+      <section class="cards-grid">
+        <div class="kpicard">
+          <svg class="kpicard-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="#FFFFFF">
+            <path
+              d="M326-773q-18 18-44 18t-44-18l-29-28q-18-18-18-44t18-44.5q18-18.5 44-18.5t45 19l28 28q18 18 18.5 43.5T326-773Zm308 0q-18-18-18-44t18-44l29-29q18-18 44-18t44 19q18 19 18.5 44.5T751-801l-29 28q-18 18-44 18t-44-18Zm-154-44q-26 0-44.5-18.5T417-880v-51q0-26 18.5-44.5T480-994q26 0 44.5 18.5T543-931v51q0 26-18.5 44.5T480-817ZM86-48v-299q0-11 1.5-21t5.5-20l72-204q14-38 45.5-61t72.5-23h394q41 0 72.5 23t45.5 61l72 204q4 10 5.5 20t1.5 21v300q0 32.5-22.75 55.25T796 31q-32 0-55.5-23.5T717-48v-1H243v2q0 32.5-22.75 55.25T165 31q-32 0-55.5-23.5T86-48Zm160-394h468l-37-108H283l-37 108Zm60 234q25 0 42.5-17.5T366-268q0-25-17.5-42.5T306-328q-25 0-42.5 17.5T246-268q0 25 17.5 42.5T306-208Zm348 0q25 0 42.5-17.5T714-268q0-25-17.5-42.5T654-328q-25 0-42.5 17.5T594-268q0 25 17.5 42.5T654-208Z" />
+          </svg>
+          <div class="kpicard-label">Total Accidents</div>
+          <div id="kpiAccidents" class="kpicard-value">—</div>
+        </div>
+        <div class="kpicard">
+          <svg class="kpicard-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="#FFFFFF">
+            <path
+              d="m780-490-40 39q-19 18-44 18t-44-19q-19-19-19-44.5t19-44.5l39-39-39-39q-19-18-19-44t19-45q19-19 44.5-19t44.5 19l39 40 39-39q18-19 44-19.5t45 18.5q19 19 19 44.5T908-619l-39 39 39 40q18 19 18.5 44T908-452q-19 19-44.5 19T819-452l-39-38Zm-417-7q-81 0-137.5-56.5T169-691q0-81 56.5-137T363-884q81 0 137.5 56T557-691q0 81-56.5 137.5T363-497ZM9-235v-22q0-43 22.5-79.5T92-392q65-32 133-48.5T363-457q72 0 140 16t131 48q38 19 60.5 55t22.5 81v22q0 53-36.5 89.5T591-109H135q-53 0-89.5-36.5T9-235Z" />
+          </svg>
+          <div class="kpicard-label">Total Victims</div>
+          <div id="kpiVictims" class="kpicard-value">—</div>
+        </div>
+        <div class="kpicard">
+          <svg class="kpicard-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="#FFFFFF">
+            <path
+              d="M480-537q-81 0-137.5-56.5T286-731q0-81 56.5-137T480-924q81 0 137.5 56T674-731q0 81-56.5 137.5T480-537Zm-75 392q-10 0-16-6t-6-16q0-9 6-15.5t16-6.5h26q6 0 9 5t1 10l-8 19q-2 4-5 7t-8 3h-15ZM209-432q63-31 131.5-48T480-497q20 0 41 1.5t41 3.5q17 3 24.5 18.5T586-441l-58 108q-8 16-23 24.5t-32 8.5h-68q-55 0-94 39t-39 94q0 24 7.5 45.5T301-83q14 16 9 32.5T290-34H189q-26 0-44.5-18.5T126-97v-200q0-43 22.5-79t60.5-56Zm625 272q0 53-35.5 89.5T718-34h-1q-8 0-13.5-5.5T698-53v-355q0-17 14-27t30-2q2 2 4.5 2.5t4.5 1.5q38 20 60.5 56.5T834-297v137Z" />
+          </svg>
+          <div class="kpicard-label">Avg Victim/Accident</div>
+          <div id="kpiAvgVictims" class="kpicard-value">—</div>
+        </div>
+        <div class="kpicard">
+          <svg class="kpicard-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+            width="24px" fill="#FFFFFF">
+            <path
+              d="M169-162v-111q-31-14-57-48.5T86-404v-280q0-26 18.5-44.5T149-747h151q26 0 44.5 18.5T363-684v280q0 48-25.5 82.5T281-273v111h24q24 0 41 17t17 41q0 24-17 41t-41 17H144q-24 0-41-17t-17-41q0-24 17-41t41-17h25Zm33-369h45v-100h-45v100ZM533-46q-46 0-78-32t-32-78v-377q0-32 14.5-60t40.5-44l25-15q12-8 21-19t9-27v-146q0-29 22-49.5t53-20.5h123q31 0 52.5 20.5T805-844v146q0 14 6 26.5t18 19.5l28 15q27 15 42 43.5t15 60.5v377q0 46-32 78t-78 32H533Zm116-712h40v-40h-40v40ZM539-482h259v-57l-31-22q-31-22-54.5-50T689-677v-1h-40v1q0 38-20.5 67T575-561l-36 22v57Zm0 320h259v-80H539v80Z" />
+          </svg>
+          <div class="kpicard-label">Alcohol Involvement</div>
+          <div id="kpiAlcoholPct" class="kpicard-value">—</div>
+        </div>
+        <div class="kpicard col-span-2">
+          <div class="gender-kpis">
+            <div class="gender-item">
+              <div class="genderkpicard-label">
+                <svg class="gender-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                  width="24px" fill="#FFFFFF">
+                  <path
+                    d="M831-775v160q0 26-18.5 44.5T768-552q-26 0-44.5-18.5T705-615v-8L583-502q17 28 24.5 59t7.5 63q0 101-71 172t-172 71q-101 0-172-71t-71-172q0-101 71-172t172-71q32 0 63 8t58 25l122-122h-7q-26 0-44.5-18.5T545-775q0-26 18.5-44.5T608-838h160q26 0 44.5 18.5T831-775ZM372-497q-49 0-83 34t-34 83q0 49 34 83t83 34q49 0 83-34t34-83q0-49-34-83t-83-34Z" />
+                </svg>
+                Male
+              </div>
+              <div id="kpiMale" class="genderkpicard-value" style="margin-top: 5px">
+                —
+              </div>
+            </div>
+            <div class="gender-item">
+              <div class="genderkpicard-label">
+                <svg class="gender-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                  width="24px" fill="#FFFFFF">
+                  <path
+                    d="M417-163h-22q-24 0-41-17.5T337-222q0-24 17.5-41t41.5-17h21v-66q-80-21-130-86t-50-148q0-101 71-172t172-71q101 0 172 71t71 172q0 83-50 148t-130 86v66h22q24 0 41 17t17 41q0 24-17 41.5T565-163h-22v17q0 26-18.5 44.5T480-83q-26 0-44.5-18.5T417-146v-17Zm63-300q49 0 83-34t34-83q0-49-34-83t-83-34q-49 0-83 34t-34 83q0 49 34 83t83 34Z" />
+                </svg>
+                Female
+              </div>
+              <div id="kpiFemale" class="genderkpicard-value" style="margin-top: 5px">
+                —
+              </div>
+            </div>
+            <div class="gender-item">
+              <div class="genderkpicard-label">
+                <svg class="gender-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                  width="24px" fill="#FFFFFF">
+                  <path
+                    d="M568-662q0-33-22-54t-57-21q-23 0-42.5 8T412-704q-29 32-69.5 36T276-689q-20-20-20-51.5t21-57.5q38-48 92-73t120-25q109 0 176 64t67 167q0 51-27 102.5T621-451q-14 15-25.5 31T575-387q-16 30-38 46t-47 16q-32 0-55-21t-23-51q0-47 22-88.5t64-71.5q39-28 54.5-51.5T568-662ZM489-42q-46 0-78-32t-32-78q0-46 32-78.5t78-32.5q46 0 78.5 32.5T600-152q0 46-32.5 78T489-42Z" />
+                </svg>
+                Unknown
+              </div>
+              <div id="kpiUnknown" class="genderkpicard-value" style="margin-top: 5px">
+                —
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="forecastSpinner" class="loader-container hidden" style="min-height: 200px">
+        <div class="loader-spinner"></div>
+        <p>Generating forecast, please wait...</p>
+      </div>
+
+      <div class="vis-grid">
+
+        <div class="card col-span-2">
+          <div class="card-value clickable-title" data-chart-id="overallTimeSeriesChart"
+            data-chart-title="Overall Accident Trend">
+            Overall Accident Trend
+          </div>
+          <div id="overallTimeSeriesChart" style="height: 300px">
+          </div>
+        </div>
+
+        <!-- Accidents by Hour -->
+        <div class="card">
+          <div class="card-value" data-chart-id="hourlyBar" data-chart-title="Accidents by Hour of Day">
+            Accidents by Hour of Day
+          </div>
+          <div id="hourlyBar" style="height: 300px"></div>
+        </div>
+
+        <!-- Day of Week -->
+        <div class="card">
+          <div class="card-value" data-chart-id="dayOfWeekCombo"
+            data-chart-title="Accidents and Severity by Day of Week">
+            Accidents and Severity by Day of Week
+          </div>
+          <div id="dayOfWeekCombo" style="height: 300px"></div>
+        </div>
+
+        <!-- Top Barangays -->
+        <div class="card col-span-2">
+          <div class="card-value" data-chart-id="topBarangays" data-chart-title="Top 10 Barangays by Accident Count">
+            Top 10 Barangays by Accident Count
+          </div>
+          <div id="topBarangays" style="height: 300px"></div>
+        </div>
+
+        <!-- Alcohol by Hour -->
+        <div class="card">
+          <div class="card-value" data-chart-id="alcoholByHour"
+            data-chart-title="Proportion of Alcohol Involvement by Hour">
+            Proportion of Alcohol Involvement by Hour
+          </div>
+          <div id="alcoholByHour" style="height: 300px"></div>
+        </div>
+
+        <!-- Victims by Age -->
+        <div class="card">
+          <div class="card-value" data-chart-id="victimsByAge" data-chart-title="Total Victims by Age">
+            Total Victims by Age
+          </div>
+          <div id="victimsByAge" style="height: 300px"></div>
+        </div>
+
+        <!-- Offense Type -->
+        <div class="card col-span-2">
+          <div class="card-value" data-chart-id="offenseTypeChart" data-chart-title="Accidents by Offense Type">
+            Accidents by Offense Type
+          </div>
+          <div id="offenseTypeChart" style="height: 300px"></div>
+          <div id="offenseTypeLegend" class="custom-legend"></div>
         </div>
       </div>
-    </div>
+      {% endif %}
+    </main>
+  </div>
 
-    <!-- Script Libraries -->
-    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="{{ url_for('static', filename='filter-graphs.js') }}"></script>
-  </body>
+  <!-- Modals -->
+  <div id="logoutModal" class="modal hidden">
+    <div class="modal-content">
+      <p>Are you sure you want to logout?</p>
+      <div class="modal-buttons">
+        <button onclick="confirmLogout()">Yes</button>
+        <button onclick="closeLogoutModal()">No</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="filterModal" class="filter-modal hidden">
+    <div class="filter-modal-content">
+      <button class="filter-close-btn" onclick="closeFilterModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="filter-grid">
+
+        <!-- Location -->
+        <div class="filter-group">
+          <label for="locationFilter" class="filter-label">Location(s)</label>
+          <div class="filter-dropdown">
+            <div id="multiSelectContainer" class="multi-select-container">
+              <div id="locationPillsContainer" class="pills-container"></div>
+              <input type="text" id="locationFilter" class="multi-select-input" placeholder="Select or search..."
+                autocomplete="off" />
+            </div>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280"
+              stroke-width="2">
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+            <div id="locationDropdownList" class="dropdown-list"></div>
+          </div>
+        </div>
+
+        <!-- Gender -->
+        <div class="filter-group">
+          <label for="genderFilter" class="filter-label">Gender</label>
+          <div class="filter-dropdown">
+            <input type="text" id="genderFilter" class="filter-select" placeholder="Select or search gender"
+              autocomplete="off" />
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280"
+              stroke-width="2">
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+            <div id="genderDropdownList" class="dropdown-list"></div>
+          </div>
+        </div>
+
+        <!-- Date Range -->
+        <div class="filter-group">
+          <label class="filter-label">Date Range</label>
+          <div class="month-range">
+            <div class="month-input-group">
+              <input type="month" id="monthFrom" class="filter-date-input" min="2015-01" />
+            </div>
+            <span class="range-separator">to</span>
+            <div class="month-input-group">
+              <input type="month" id="monthTo" class="filter-date-input" min="2015-01" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Time of Day -->
+        <div class="filter-group">
+          <label class="filter-label">Time of Day</label>
+          <div class="time-range">
+            <div class="time-input-group">
+              <input type="text" id="timeFrom" class="time-input" placeholder="From" />
+              <svg class="time-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280"
+                stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12,6 12,12 16,14"></polyline>
+              </svg>
+            </div>
+            <span class="range-separator">to</span>
+            <div class="time-input-group">
+              <input type="text" id="timeTo" class="time-input" placeholder="To" />
+              <svg class="time-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280"
+                stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12,6 12,12 16,14"></polyline>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Age Range -->
+        <div class="filter-group">
+          <label class="filter-label">Age Range</label>
+          <div class="range-pills">
+            <input id="ageFromBox" class="pill" type="number" min="0" max="100" value="0" /><span
+              class="range-separator">to</span><input id="ageToBox" class="pill" type="number" min="0" max="100"
+              value="100" />
+          </div>
+          <div class="dual-range">
+            <input id="ageFrom" type="range" min="0" max="100" value="0" /><input id="ageTo" type="range" min="0"
+              max="100" value="100" />
+            <div class="track"></div>
+            <div id="ageFill" class="range-fill"></div>
+          </div>
+        </div>
+
+        <!-- Day of Week -->
+        <div class="filter-group">
+          <label class="filter-label">Day of Week</label>
+          <div class="checkbox-group-wrapper" id="dowGroup">
+            <div class="checkbox-column">
+              <label><input type="checkbox" value="1. Monday" /> Monday</label>
+              <label><input type="checkbox" value="2. Tuesday" /> Tuesday</label>
+              <label><input type="checkbox" value="3. Wednesday" /> Wednesday</label>
+              <label><input type="checkbox" value="4. Thursday" /> Thursday</label>
+            </div>
+            <div class="checkbox-column">
+              <label><input type="checkbox" value="5. Friday" /> Friday</label>
+              <label><input type="checkbox" value="6. Saturday" /> Saturday</label>
+              <label><input type="checkbox" value="7. Sunday" /> Sunday</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Offense Type -->
+        <div class="filter-group">
+          <label class="filter-label">Offense Type</label>
+          <div class="checkbox-group-wrapper" id="offenseGroup">
+            <div class="checkbox-column">
+              <label><input type="checkbox" value="Property_and_Person" /> Property & Person</label>
+              <label><input type="checkbox" value="Person_Injury_Only" /> Person Injury Only</label>
+            </div>
+            <div class="checkbox-column">
+              <label><input type="checkbox" value="Property_Damage_Only" /> Property Damage Only</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alcohol Involved -->
+        <div class="filter-group">
+          <label class="filter-label">Alcohol Involved</label>
+          <div class="checkbox-row" id="alcoholGroup">
+            <label><input type="checkbox" value="Yes" /> Yes</label>
+            <label><input type="checkbox" value="No" /> No</label>
+            <label><input type="checkbox" value="Unknown" /> Unknown</label>
+          </div>
+        </div>
+
+      </div>
+      <div class="filter-actions">
+        <button class="filter-clear-btn">Clear Filters</button>
+        <button class="filter-apply-btn">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clean Zoom Modal -->
+  <div id="zoomModal" class="zoom-modal">
+    <div class="zoom-modal-content">
+      <div class="zoom-modal-header">
+        <h2 id="zoomModalTitle" class="zoom-modal-title">Graph Title</h2>
+        <button onclick="closeZoomModal()" class="zoom-close-btn">
+          ✕ Close
+        </button>
+      </div>
+      <div class="zoom-chart-container">
+        <div id="zoomChartDisplay" style="width: 100%; height: 100%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Libraries -->
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- START: ADD FLATPCIKR JS (This was missing) -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- END: ADD FLATPCIKR JS -->
+  <script src="{{ url_for('static', filename='filter-graphs.js') }}"></script>
+</body>
+
 </html>

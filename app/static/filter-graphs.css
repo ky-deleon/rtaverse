@@ -14,7 +14,7 @@
   grid-column: span 2;
 }
 
-.card > div[id] {
+.card>div[id] {
   overflow-y: auto;
   max-height: 400px;
 }
@@ -45,7 +45,7 @@
 }
 
 /* ======================================== */
-/* === NEW: FORECAST CONTROLS           === */
+/* === FORECAST CONTROLS                === */
 /* ======================================== */
 
 .forecast-controls {
@@ -130,16 +130,16 @@
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #0437f2;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(22px);
 }
 
 /* ======================================== */
-/* === FILTER MODAL (STABLE VERSION)    === */
+/* === FILTER MODAL                     === */
 /* ======================================== */
 
 .filter-modal {
@@ -178,6 +178,7 @@ input:checked + .slider:before {
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -192,50 +193,61 @@ input:checked + .slider:before {
   border: none;
   cursor: pointer;
   padding: 5px;
-  border-radius: 8px; /* Adds rounded corners to the hover area */
-  transition: background 0.2s ease; /* Smooth transition for the "glow" */
+  border-radius: 8px;
+  transition: background 0.2s ease;
 }
 
 .filter-close-btn:hover {
-  background: #f4f7fe; /* The light blue "glow" on hover */
+  background: #f4f7fe;
 }
 
 .filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 25px 20px;
   grid-template-areas:
     "location gender"
-    "hour age"
-    "dayofweek offense"
-    "alcohol alcohol";
+    "daterange timerange"
+    "age dayofweek"
+    "offense alcohol";
 }
 
 .filter-grid .filter-group:nth-child(1) {
   grid-area: location;
 }
+
 .filter-grid .filter-group:nth-child(2) {
   grid-area: gender;
 }
+
 .filter-grid .filter-group:nth-child(3) {
-  grid-area: hour;
+  grid-area: daterange;
 }
+
 .filter-grid .filter-group:nth-child(4) {
+  grid-area: timerange;
+}
+
+.filter-grid .filter-group:nth-child(5) {
   grid-area: age;
 }
-.filter-grid .filter-group:nth-child(5) {
+
+.filter-grid .filter-group:nth-child(6) {
   grid-area: dayofweek;
 }
-.filter-grid .filter-group:nth-child(6) {
+
+.filter-grid .filter-group:nth-child(7) {
   grid-area: offense;
 }
-.filter-grid .filter-group:nth-child(7) {
+
+.filter-grid .filter-group:nth-child(8) {
   grid-area: alcohol;
 }
 
 .filter-group {
   margin-bottom: 0;
 }
+
 .filter-label {
   display: block;
   font-size: 16px;
@@ -245,8 +257,62 @@ input:checked + .slider:before {
   margin-bottom: 12px;
 }
 
-.filter-select,
-.gender-select {
+/* --- START OF FIX: ADDED MISSING MULTI-SELECT STYLES --- */
+.multi-select-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  /* Adjust padding to make space for pills */
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  cursor: text;
+}
+
+.multi-select-container:focus-within {
+  border-color: #0437f2;
+}
+
+.pills-container {
+  display: contents;
+  /* Allows pills to flow naturally with flexbox */
+}
+
+.location-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #e5ecff;
+  color: #0437f2;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill-remove {
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.multi-select-input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  padding: 7px 5px;
+  /* Adjust padding for aesthetics */
+  font-size: 14px;
+  font-family: "Chillax", sans-serif;
+  background: transparent;
+}
+
+/* --- END OF FIX --- */
+
+.filter-select {
   width: 100%;
   padding: 15px 45px 15px 20px;
   border: 2px solid #e5e7eb;
@@ -259,16 +325,7 @@ input:checked + .slider:before {
   box-sizing: border-box;
 }
 
-.gender-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: none;
-  cursor: pointer;
-}
-
 .filter-select:focus,
-.gender-select:focus,
 .pill:focus {
   border-color: #0437f2;
 }
@@ -277,6 +334,7 @@ input:checked + .slider:before {
   position: relative;
   overflow: visible;
 }
+
 .dropdown-arrow {
   position: absolute;
   right: 20px;
@@ -285,13 +343,15 @@ input:checked + .slider:before {
   pointer-events: none;
 }
 
-#locationDropdownList {
+#locationDropdownList,
+#genderDropdownList {
   font-size: 14px;
   font-family: "Chillax", sans-serif;
   display: none;
   position: absolute;
   width: 100%;
-  z-index: 10;
+  z-index: 1001;
+  /* Ensure it's above other modal content */
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 15px;
@@ -300,10 +360,12 @@ input:checked + .slider:before {
   overflow-y: auto;
   margin-top: 8px;
 }
+
 .dropdown-item {
   padding: 12px 20px;
   cursor: pointer;
 }
+
 .dropdown-item:hover {
   background-color: #f4f7fe;
 }
@@ -313,6 +375,7 @@ input:checked + .slider:before {
   flex-wrap: wrap;
   gap: 8px 16px;
 }
+
 .checkbox-column {
   display: flex;
   flex-direction: column;
@@ -320,6 +383,7 @@ input:checked + .slider:before {
   flex-basis: 200px;
   flex-grow: 1;
 }
+
 .checkbox-group-wrapper label,
 .checkbox-row label {
   font-size: 14px;
@@ -328,6 +392,7 @@ input:checked + .slider:before {
   align-items: center;
   gap: 8px;
 }
+
 .checkbox-row {
   display: flex;
   gap: 24px;
@@ -339,6 +404,7 @@ input:checked + .slider:before {
   gap: 12px;
   margin-bottom: 20px;
 }
+
 .pill {
   width: 60px;
   padding: 10px 12px;
@@ -349,14 +415,17 @@ input:checked + .slider:before {
   font-family: "Chillax", sans-serif;
   outline: none;
 }
+
 .range-separator {
   color: #6b7280;
   font-weight: 500;
 }
+
 .dual-range {
   position: relative;
   height: 24px;
 }
+
 .dual-range .track,
 .dual-range .range-fill {
   position: absolute;
@@ -366,15 +435,18 @@ input:checked + .slider:before {
   top: 15%;
   transform: translateY(-50%);
 }
+
 .dual-range .track {
   right: 0;
   background: #e5e7eb;
   z-index: 1;
 }
+
 .dual-range .range-fill {
   background: #4da3ff;
   z-index: 2;
 }
+
 .dual-range input[type="range"] {
   position: absolute;
   width: 100%;
@@ -383,6 +455,7 @@ input:checked + .slider:before {
   background: transparent;
   margin: 0;
 }
+
 .dual-range input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   pointer-events: all;
@@ -397,6 +470,7 @@ input:checked + .slider:before {
   z-index: 3;
   margin-top: -7px;
 }
+
 .filter-actions {
   display: flex;
   justify-content: flex-end;
@@ -405,6 +479,7 @@ input:checked + .slider:before {
   padding-top: 20px;
   border-top: 1px solid #eee;
 }
+
 .filter-apply-btn,
 .filter-clear-btn {
   padding: 12px 24px;
@@ -415,13 +490,73 @@ input:checked + .slider:before {
   font-weight: 700;
   font-family: "Chillax", sans-serif;
 }
+
 .filter-apply-btn {
   background-color: #0437f2;
   color: white;
 }
+
 .filter-clear-btn {
   background-color: #e5e7eb;
   color: #374151;
+}
+
+.month-range,
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-input-group,
+.time-input-group {
+  flex: 1;
+  position: relative;
+}
+
+.filter-date-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.filter-date-input:focus,
+.time-input:focus {
+  border-color: #0437f2;
+}
+
+.time-input,
+.flatpickr-input {
+  width: 100%;
+  padding: 15px 45px 15px 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.time-input-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* ======================================== */
@@ -450,7 +585,8 @@ input:checked + .slider:before {
 
 /* === GRAPH ZOOM BUTTON === */
 .vis-grid .card {
-  position: relative; /* Force it for cards in vis-grid */
+  position: relative;
+  /* Force it for cards in vis-grid */
 }
 
 .vis-grid .card .zoom-btn {
@@ -467,7 +603,8 @@ input:checked + .slider:before {
   color: #0437f2;
   transition: all 0.2s ease;
   z-index: 10;
-  display: flex !important; /* Force display */
+  display: flex !important;
+  /* Force display */
   align-items: center;
   gap: 4px;
 }
@@ -569,17 +706,20 @@ input:checked + .slider:before {
   background-color: #0437f2;
   color: white;
   border: none;
-  border-radius: 20px; /* Pill shape */
+  border-radius: 20px;
+  /* Pill shape */
   font-weight: 600;
   font-family: "Chillax", sans-serif;
   cursor: pointer;
   font-size: 14px;
-  white-space: nowrap; /* Prevents text from wrapping */
+  white-space: nowrap;
+  /* Prevents text from wrapping */
   transition: background-color 0.2s ease;
 }
 
 .header-action-btn:hover {
-  background-color: #032bbd; /* Darker blue on hover */
+  background-color: #032bbd;
+  /* Darker blue on hover */
 }
 
 /* Add these rules to the end of filter-graphs.css */
@@ -605,9 +745,11 @@ input:checked + .slider:before {
   overflow: hidden;
   transition: transform 0.2s ease;
 }
+
 .kpicard:hover {
   transform: translateY(-2px);
 }
+
 .kpicard-icon {
   position: absolute;
   top: 15px;
@@ -618,10 +760,12 @@ input:checked + .slider:before {
   transform: rotate(0deg);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
+
 .kpicard:hover .kpicard-icon {
   transform: rotate(-8deg) scale(1.05);
   opacity: 0.9;
 }
+
 .kpicard-label {
   font-size: 14px;
   letter-spacing: 0.5px;
@@ -630,12 +774,14 @@ input:checked + .slider:before {
   display: block;
   font-weight: 500;
 }
+
 .kpicard-value {
   font-size: 20px;
   font-weight: 700;
   color: #ffffff;
   padding-left: 50px;
 }
+
 .gender-kpis {
   display: flex;
   justify-content: space-between;
@@ -643,6 +789,7 @@ input:checked + .slider:before {
   gap: 15px;
   width: 100%;
 }
+
 .gender-item {
   flex: 1 1 0%;
   text-align: left;
@@ -652,6 +799,7 @@ input:checked + .slider:before {
   flex-direction: column;
   overflow: hidden;
 }
+
 .gender-icon {
   position: absolute;
   top: 0px;
@@ -662,14 +810,17 @@ input:checked + .slider:before {
   transform: rotate(0deg);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
+
 .gender-item:hover .gender-icon {
   transform: rotate(-8deg) scale(1.05);
   opacity: 0.9;
 }
+
 .gender-item .kpicard-label {
   padding-right: 0;
   display: block;
 }
+
 .genderkpicard-label {
   font-size: 14px;
   letter-spacing: 0.5px;
@@ -679,6 +830,7 @@ input:checked + .slider:before {
   display: block;
   font-weight: 500;
 }
+
 .genderkpicard-value {
   font-size: 20px;
   font-weight: 700;
@@ -728,8 +880,10 @@ input:checked + .slider:before {
 }
 
 .loader-spinner {
-  border: 8px solid #e5ecff; /* Light blue */
-  border-top: 8px solid #0437f2; /* Main theme blue */
+  border: 8px solid #e5ecff;
+  /* Light blue */
+  border-top: 8px solid #0437f2;
+  /* Main theme blue */
   border-radius: 50%;
   width: 60px;
   height: 60px;
@@ -744,7 +898,71 @@ input:checked + .slider:before {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
+}
+
+.month-range,
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-input-group,
+.time-input-group {
+  flex: 1;
+  position: relative;
+}
+
+.filter-date-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.filter-date-input:focus,
+.time-input:focus {
+  border-color: #0437f2;
+}
+
+.time-input,
+.flatpickr-input {
+  width: 100%;
+  padding: 15px 45px 15px 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 15px;
+  font-family: "Chillax", sans-serif;
+  font-size: 14px;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.time-input-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.range-separator {
+  color: #6b7280;
+  font-weight: 500;
 }

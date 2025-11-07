@@ -103,13 +103,11 @@ def database_page():
         "OFFENSE",
         "LATITUDE",
         "LONGITUDE",
-        "ACCIDENT_HOTSPOT",
         "VICTIM COUNT",
         "SUSPECT COUNT",
         "AGE",
         "GENDER_CLUSTER",
         "ALCOHOL_USED_CLUSTER",
-        "VEHICLE KIND",
     ]
     
     final_columns = [col for col in COLUMNS_TO_SHOW if col in display_df.columns]

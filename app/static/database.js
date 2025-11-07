@@ -55,16 +55,16 @@ const DISPLAY_RENDER_MAP = {
   },
 
   // OFFENSE bucketed categories → nicer spacing
+  // OFFENSE bucketed categories → 1, 2, 3, 4
   OFFENSE: (v) => {
     if (!v) return "";
-    // Map exact strings if needed
+    // Map raw values to the user's desired numbers
     const map = {
-      Property_and_Person: "Property + Person",
-      Person_Injury_Only: "Person Injury Only",
-      Property_Damage_Only: "Property Damage Only",
-      Other: "Other",
+      Property_Damage_Only: "1",
+      Property_and_Person: "2",
+      Person_Injury_Only: "3",
     };
-    return map[v] || v;
+    return map[v] || v; // Return the mapped value, or the original if not in the map
   },
 
   "VEHICLE KIND": (v) =>
@@ -80,6 +80,16 @@ const DISPLAY_RENDER_MAP = {
   MONTH_COS: (v) => v,
   DAYOWEEK_SIN: (v) => v,
   DAYOWEEK_COS: (v) => v,
+
+  STATION: (v) => {
+    if (typeof v === "string") {
+      const match = v.match(/\d+/); // Finds the first number in the string
+      if (match) {
+        return match[0]; // Returns just the number (e.g., "4")
+      }
+    }
+    return v; // Return original value if no number is found
+  },
 };
 
 // Utility: find column index by visible header text
@@ -330,6 +340,7 @@ $(document).ready(function () {
       {
         targets: -1,
         data: null,
+        orderable: false,
         defaultContent: `<button class="delete-btn">Delete</button>`,
       },
     ];
@@ -340,7 +351,7 @@ $(document).ready(function () {
     dataTable = $("#uploadedTable").DataTable({
       paging: false,
       lengthChange: false,
-      ordering: false,
+      ordering: true,
       searching: true,
       dom: "rtip",
       language: {
@@ -350,8 +361,10 @@ $(document).ready(function () {
         infoEmpty: "No entries",
         infoFiltered: "(filtered from _MAX_ total entries)",
       },
-      columnDefs: staticColumnDefs.concat(displayRenderers),
-      order: [], // we'll set it dynamically in initComplete
+      columnDefs: [{ targets: "_all", orderSequence: ["asc", "desc", ""] }]
+        .concat(staticColumnDefs)
+        .concat(displayRenderers),
+      order: [[4, "asc"]], // Sort by column 4 (DATE_COMMITTED) descending
       initComplete: function () {
         // Hide loader and show the table/controls
         $("#tableLoader").hide();
@@ -380,7 +393,7 @@ $(document).ready(function () {
 
         // Create year buttons after info text
         createYearButtons(this.api());
-        filterEarliestOnLoad(this.api());
+        //filterEarliestOnLoad(this.api());
       },
     });
 
@@ -877,7 +890,7 @@ function createYearButtons(api) {
   container.append(infoContainer).append(yearNav);
   renderYears();
   // Set default state on load
-  filterEarliestOnLoad(api);
+  //filterEarliestOnLoad(api);
 }
 
 function filterEarliestOnLoad(api) {
@@ -1535,7 +1548,7 @@ function initializeAppendTargetDropdown() {
 }
 
 // --- REPLACE the entire submitUpload() in database.js with this ---
-// --- REPLACE the entire submitUpload() in database.js with this ---
+
 async function submitUpload() {
   // Get state variables first
   const appendMode = !!document.getElementById("appendToggle")?.checked;

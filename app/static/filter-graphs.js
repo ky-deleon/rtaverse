@@ -7,14 +7,17 @@ let currentFilters = {
   dayOfWeek: [],
   alcohol: [],
   offenseType: [],
-  hourFrom: 0,
-  hourTo: 23,
+  hourFrom: null,
+  hourTo: null,
   ageFrom: 0,
   ageTo: 100,
+  start: "",
+  end: "",
 };
 let isForecastMode = false;
-
 let selectedLocations = [];
+let timeFromPicker = null;
+let timeToPicker = null;
 
 // ==========================================
 // === CORE UI & GENERAL PAGE FUNCTIONS
@@ -42,22 +45,23 @@ function getFilterState() {
   if (genderValue.toLowerCase() === "all genders") {
     genderValue = "";
   }
-
-  // Read selected locations from the data attributes of the pills
   const locations = Array.from(document.querySelectorAll(".location-pill")).map(
     (pill) => pill.dataset.location
   );
-
+  const timeFromVal = document.getElementById("timeFrom").value;
+  const timeToVal = document.getElementById("timeTo").value;
   return {
-    location: locations, // This is now an array
+    location: locations,
     gender: genderValue.toLowerCase(),
     dayOfWeek: getCheckedValues("dowGroup"),
     alcohol: getCheckedValues("alcoholGroup"),
     offenseType: getCheckedValues("offenseGroup"),
-    hourFrom: +document.getElementById("hourFromBox").value,
-    hourTo: +document.getElementById("hourToBox").value,
+    hourFrom: timeFromVal ? timeFromVal.split(":")[0] : null,
+    hourTo: timeToVal ? timeToVal.split(":")[0] : null,
     ageFrom: +document.getElementById("ageFromBox").value,
     ageTo: +document.getElementById("ageToBox").value,
+    start: document.getElementById("monthFrom").value,
+    end: document.getElementById("monthTo").value,
   };
 }
 
@@ -66,74 +70,75 @@ function getCheckedValues(containerId) {
     (cb) => cb.value
   );
 }
+
 function buildQueryString(filters) {
   const params = new URLSearchParams();
+  if (filters.start) params.set("start", filters.start);
+  if (filters.end) params.set("end", filters.end);
   if (filters.location?.length)
-    params.set("location", filters.location.join(",")); // Join array with commas
+    params.set("location", filters.location.join(","));
   if (filters.gender) params.set("gender", filters.gender);
   if (filters.dayOfWeek?.length)
     params.set("day_of_week", filters.dayOfWeek.join(","));
   if (filters.alcohol?.length) params.set("alcohol", filters.alcohol.join(","));
   if (filters.offenseType?.length)
     params.set("offense_type", filters.offenseType.join(","));
-  if (Number.isFinite(filters.hourFrom))
+  if (filters.hourFrom !== null)
     params.set("hour_from", String(filters.hourFrom));
-  if (Number.isFinite(filters.hourTo))
-    params.set("hour_to", String(filters.hourTo));
+  if (filters.hourTo !== null) params.set("hour_to", String(filters.hourTo));
   if (Number.isFinite(filters.ageFrom))
     params.set("age_from", String(filters.ageFrom));
   if (Number.isFinite(filters.ageTo))
     params.set("age_to", String(filters.ageTo));
   return params.toString();
 }
-// REPLACE your old applyFilters function with this
+
 function applyFilters() {
   setTimeout(() => {
     currentFilters = getFilterState();
-
-    // --- NEW SPINNER LOGIC START ---
     const spinner = document.getElementById("forecastSpinner");
     const grid = document.querySelector(".vis-grid");
-
     if (isForecastMode && spinner && grid) {
-      // If forecast mode is on, show spinner and hide charts
       spinner.classList.remove("hidden");
       grid.classList.add("hidden");
     } else if (grid) {
-      // If not in forecast mode, hide spinner and show charts
       grid.classList.remove("hidden");
       if (spinner) spinner.classList.add("hidden");
     }
-    // --- NEW SPINNER LOGIC END ---
-
-    // Call the new async loader function to load all data
     loadAllVisualizations(currentFilters);
-
     closeFilterModal();
   }, 0);
 }
+
+// --- START OF FIX #1: This entire function is replaced ---
 function applyFiltersWithValidation() {
   const ageFrom = +document.getElementById("ageFromBox").value;
   const ageTo = +document.getElementById("ageToBox").value;
-  const hourFrom = +document.getElementById("hourFromBox").value;
-  const hourTo = +document.getElementById("hourToBox").value;
-  if (ageFrom > ageTo) return alert("Age 'From' cannot be greater than 'To'.");
-  if (hourFrom > hourTo)
-    return alert("Hour 'From' cannot be greater than 'To'.");
+  const monthFrom = document.getElementById("monthFrom").value;
+  const monthTo = document.getElementById("monthTo").value;
+
+  if (ageFrom > ageTo) {
+    return alert("Age 'From' cannot be greater than 'To'.");
+  }
+
+  // New validation for the month inputs.
+  if (monthFrom && monthTo && monthFrom > monthTo) {
+    return alert("The 'From' date cannot be after the 'To' date.");
+  }
+
+  // Validation passed, so apply filters. The old hour slider validation is removed.
   applyFilters();
 }
-// ADD THIS NEW FUNCTION right after applyFilters
+// --- END OF FIX #1 ---
+
 async function loadAllVisualizations(filters) {
   const spinner = document.getElementById("forecastSpinner");
   const grid = document.querySelector(".vis-grid");
-
   try {
-    // Load KPIs first
     const kpiPromises = [loadKpiCards(filters), loadGenderKpiCards(filters)];
     await Promise.all(kpiPromises);
-
-    // Load all charts in parallel
     const chartPromises = [
+      loadOverallTrendChart(filters),
       loadHourlyChart(filters),
       loadDayOfWeekChart(filters),
       loadTopBarangaysChart(filters),
@@ -141,42 +146,56 @@ async function loadAllVisualizations(filters) {
       loadVictimsByAgeChart(filters),
       loadOffenseTypeChart(filters),
     ];
-    // Wait for all charts to finish loading
     await Promise.all(chartPromises);
   } catch (error) {
     console.error("Error loading visualizations:", error);
   } finally {
-    // ALWAYS hide spinner and show the grid when done
     if (spinner) spinner.classList.add("hidden");
     if (grid) grid.classList.remove("hidden");
+    setTimeout(() => {
+      const allCharts = document.querySelectorAll(".vis-grid .card > div[id]");
+      allCharts.forEach((chartEl) => {
+        if (chartEl.data) {
+          Plotly.Plots.resize(chartEl);
+        }
+      });
+    }, 50);
   }
 }
-function clearFilters() {
-  // --- START FIX ---
-  // 1. Reset the underlying state for the location filter
-  selectedLocations = [];
-  // --- END FIX ---
 
+// --- START OF FIX #2: This entire function is replaced ---
+function clearFilters() {
+  selectedLocations = [];
   document.getElementById("locationFilter").value = "";
-  document.getElementById("locationPillsContainer").innerHTML = ""; // Clear pills
+  document.getElementById("locationPillsContainer").innerHTML = "";
   document.getElementById("genderFilter").value = "";
   document
     .querySelectorAll(
       "#dowGroup input:checked, #alcoholGroup input:checked, #offenseGroup input:checked"
     )
     .forEach((cb) => (cb.checked = false));
-  document.getElementById("hourFromBox").value = 0;
-  document.getElementById("hourToBox").value = 23;
+
+  document.getElementById("monthFrom").value = "";
+  document.getElementById("monthTo").value = "";
+  if (timeFromPicker) timeFromPicker.clear();
+  if (timeToPicker) timeToPicker.clear();
+
   document.getElementById("ageFromBox").value = 0;
   document.getElementById("ageToBox").value = 100;
-  document.getElementById("hourFrom").value = 0;
-  document.getElementById("hourTo").value = 23;
-  document.getElementById("ageFrom").value = 0;
-  document.getElementById("ageTo").value = 100;
-  document.getElementById("hourFrom").dispatchEvent(new Event("input"));
-  document.getElementById("ageFrom").dispatchEvent(new Event("input"));
+
+  // Correctly reset the age slider's visual state by dispatching events to both thumbs
+  const ageFromSlider = document.getElementById("ageFrom");
+  const ageToSlider = document.getElementById("ageTo");
+  if (ageFromSlider && ageToSlider) {
+    ageFromSlider.value = 0;
+    ageToSlider.value = 100;
+    ageFromSlider.dispatchEvent(new Event("input"));
+    ageToSlider.dispatchEvent(new Event("input"));
+  }
+
   applyFilters();
 }
+// --- END OF FIX #2 ---
 
 function openFilterModal() {
   document.getElementById("filterModal").classList.remove("hidden");
@@ -185,12 +204,9 @@ function closeFilterModal() {
   document.getElementById("filterModal").classList.add("hidden");
 }
 
-// In filter-graphs.js, add this new helper function.
-
 function formatFiltersForPDF() {
-  const filters = getFilterState(); // Use existing function to get current filters
+  const filters = getFilterState();
   const parts = [];
-
   if (filters.location) parts.push(`Location: ${filters.location}`);
   if (filters.gender) parts.push(`Gender: ${filters.gender}`);
   if (filters.dayOfWeek.length > 0)
@@ -199,16 +215,13 @@ function formatFiltersForPDF() {
     parts.push(`Alcohol: ${filters.alcohol.join(", ")}`);
   if (filters.offenseType.length > 0)
     parts.push(`Offense Types: ${filters.offenseType.join(", ")}`);
-
   if (filters.hourFrom !== 0 || filters.hourTo !== 23) {
     parts.push(`Hour: ${filters.hourFrom} to ${filters.hourTo}`);
   }
   if (filters.ageFrom !== 0 || filters.ageTo !== 100) {
     parts.push(`Age: ${filters.ageFrom} to ${filters.ageTo}`);
   }
-
   if (parts.length === 0) return "None";
-
   return parts.join("; ");
 }
 
@@ -216,22 +229,15 @@ function formatFiltersForPDF() {
 // === CHART LOADING & RENDERING (REVISED)
 // ==========================================
 
-// Find this function (around line 348)
 function showNoData(elId, msg) {
   const host = document.getElementById(elId);
   if (!host) return;
-  // Clear any existing Plotly charts to prevent conflicts
   try {
     Plotly.purge(host);
-  } catch (e) {
-    // Ignore if no chart exists
-  }
-
-  // --- START OF CHANGES ---
+  } catch (e) {}
 
   let displayMessage = msg || "No data available.";
   if (typeof msg === "string" && msg.includes("NO_TABLE")) {
-    // 1. This text is now updated
     displayMessage =
       "No data found to display graphs. Please upload a dataset to begin.";
   }
@@ -243,8 +249,6 @@ function showNoData(elId, msg) {
       </svg>
       <p>${displayMessage}</p>
     </div>`;
-
-  // --- END OF CHANGES ---
 }
 function capFirst(s) {
   return s;
@@ -252,14 +256,59 @@ function capFirst(s) {
 
 function formatModelName(modelName) {
   if (!modelName) return "";
-  // 1. Replace underscores with spaces
-  // 2. Split into words
-  // 3. Capitalize the first letter of each word
-  // 4. Join them back together
   return modelName
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+async function loadOverallTrendChart(filters = currentFilters) {
+  const chartId = "overallTimeSeriesChart";
+  const chartCard = document.getElementById(chartId)?.parentElement;
+  if (!chartCard) return;
+
+  const titleEl = chartCard.querySelector(".card-value");
+  document.getElementById(chartId).innerHTML = "";
+
+  try {
+    let endpoint = "/api/overall_timeseries";
+    const params = new URLSearchParams(buildQueryString(filters));
+
+    if (isForecastMode) {
+      endpoint = "/api/forecast/overall_timeseries";
+      params.set("model", document.getElementById("forecastModelSelect").value);
+      params.set(
+        "horizon",
+        document.getElementById("forecastHorizonInput").value
+      );
+    }
+
+    // --- START OF FIX ---
+    // Add cache: 'no-cache' to ensure fresh data is always fetched
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
+    // --- END OF FIX ---
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || `Request failed with status ${res.status}`);
+    }
+
+    const j = await res.json();
+
+    if (!j.success) {
+      showNoData(chartId, j.message || "The request was not successful.");
+      if (titleEl) titleEl.textContent = "Overall Accident Trend — Error";
+      return;
+    }
+
+    plotOverallTimeSeries(chartId, j.data, isForecastMode);
+  } catch (error) {
+    console.error(`Error loading ${chartId}:`, error);
+    showNoData(chartId, error.message);
+    if (titleEl) titleEl.textContent = "Overall Accident Trend — Error";
+  }
 }
 
 async function loadHourlyChart(filters = currentFilters) {
@@ -269,9 +318,6 @@ async function loadHourlyChart(filters = currentFilters) {
 
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // We will set the title *after* the data fetch,
-    // so we can clear the old one or show a default.
-    // This logic is moved down.
   }
 
   try {
@@ -287,7 +333,9 @@ async function loadHourlyChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -308,11 +356,9 @@ async function loadHourlyChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      // --- START OF CHANGE ---
       const forecastTitle = `Hourly Forecast (${formatModelName(
         j.data.model_used
       )}, ${j.data.horizon} mo)`;
-      // --- END OF CHANGE ---
 
       if (titleEl) {
         titleEl.textContent = forecastTitle;
@@ -326,19 +372,11 @@ async function loadHourlyChart(filters = currentFilters) {
         "Total Accidents"
       );
     } else {
-      // --- RECOMMENDED FIX FOR HISTORICAL ---
       if (titleEl) {
-        // 1. Define the default title
         const defaultTitle = "Accidents by Hour of Day";
-
-        // 2. Set the data attribute (if it's missing, use the default)
         titleEl.dataset.chartTitle = titleEl.dataset.chartTitle || defaultTitle;
-
-        // 3. Set the visible text *from* the data attribute
         titleEl.textContent = titleEl.dataset.chartTitle;
       }
-      // --- END RECOMMENDATION ---
-
       renderHistoricalBarChart(chartId, j.data);
     }
   } catch (e) {
@@ -367,12 +405,11 @@ function renderHistoricalBarChart(chartId, data) {
   };
 
   const maxValue = Math.max(...counts);
-
   const yAxisRange = [0, maxValue * 1.15];
 
   const layout = {
     hovermode: "closest",
-    font: { family: "Chillax, sans-serif" }, // <-- Add this line
+    font: { family: "Chillax, sans-serif" },
     margin: { l: 60, r: 10, t: 20, b: 40 },
     xaxis: { title: "Hour of Day (0–23)" },
     yaxis: {
@@ -390,27 +427,24 @@ function renderHistoricalBarChart(chartId, data) {
 function renderForecastGroupedBarChart(elementId, data, xTitle, yTitle) {
   const { labels, historical, forecast, horizon } = data;
 
-  // --- START OF FINAL FIX ---
-  // Use shorter, cleaner names for the legend.
   const traceHist = {
     x: labels,
     y: historical,
     type: "bar",
-    name: "Historical", // CHANGED from "Historical Total"
+    name: "Historical",
     marker: { color: "grey" },
   };
   const traceFcst = {
     x: labels,
     y: forecast,
     type: "bar",
-    name: "Forecast", // CHANGED from `Forecast (${horizon} mo)`
+    name: "Forecast",
     marker: { color: "#4D8DFF" },
   };
 
-  // Revert to the original, simpler layout.
   const layout = {
     hovermode: "closest",
-    font: { family: "Chillax, sans-serif" }, // <-- Add this line
+    font: { family: "Chillax, sans-serif" },
     barmode: "group",
     margin: { l: 60, r: 10, t: 40, b: 40 },
     xaxis: { title: xTitle },
@@ -425,12 +459,89 @@ function renderForecastGroupedBarChart(elementId, data, xTitle, yTitle) {
       hovermode: false,
     },
   };
-  // --- END OF FINAL FIX ---
 
   Plotly.newPlot(elementId, [traceHist, traceFcst], layout, {
     displayModeBar: false,
     responsive: true,
   });
+}
+
+function plotOverallTimeSeries(chartId, data, isForecast) {
+  const chartEl = document.getElementById(chartId);
+  const titleEl = chartEl?.parentElement.querySelector(".card-value");
+
+  if (!chartEl) return;
+
+  Plotly.purge(chartEl);
+
+  let traces = [];
+  let title = "Overall Accident Trend";
+
+  const layout = {
+    hovermode: "closest",
+    font: { family: "Chillax, sans-serif" },
+    margin: { l: 60, r: 20, t: 40, b: 40 },
+    xaxis: { title: "Month" },
+    yaxis: { title: "Number of Accidents", gridcolor: "rgba(0,0,0,0.1)" },
+    legend: {
+      orientation: "h",
+      x: 0,
+      y: 1.15,
+      font: { weight: "normal" },
+    },
+    title: { text: "" },
+  };
+  const config = { displayModeBar: false, responsive: true };
+
+  if (isForecast) {
+    const { historical, forecast, model_used, horizon } = data;
+    traces = [
+      {
+        x: historical.dates,
+        y: historical.counts,
+        mode: "lines+markers",
+        name: "Historical",
+        line: { color: "#4D8DFF", width: 3 },
+        marker: { size: 6 },
+      },
+      {
+        x: forecast.dates,
+        y: forecast.counts,
+        mode: "lines+markers",
+        name: "Forecast",
+        line: { color: "#ff7f0e", dash: "dot", width: 3 },
+        marker: { size: 6 },
+      },
+    ];
+
+    const modelDisplayName = formatModelName(model_used);
+    title = `Overall Trend (${modelDisplayName}, ${horizon} mo)`;
+    layout.showlegend = true;
+  } else {
+    const { dates, counts } = data;
+    if (!dates || !counts || dates.length === 0) {
+      showNoData(chartId, "No data available for the selected trend.");
+      if (titleEl) titleEl.textContent = title;
+      return;
+    }
+    traces = [
+      {
+        x: dates,
+        y: counts,
+        mode: "lines",
+        name: "Accidents",
+        line: { color: "#4D8DFF", width: 3 },
+      },
+    ];
+    layout.showlegend = false;
+  }
+
+  if (titleEl) {
+    titleEl.textContent = title;
+    titleEl.dataset.chartTitle = title;
+  }
+
+  Plotly.newPlot(chartId, traces, layout, config);
 }
 
 async function loadDayOfWeekChart(filters = currentFilters) {
@@ -439,7 +550,6 @@ async function loadDayOfWeekChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // Reset to default title, will be updated based on mode
     titleEl.dataset.chartTitle = "Accidents and Severity by Day of Week";
     if (!isForecastMode) {
       titleEl.textContent = titleEl.dataset.chartTitle;
@@ -459,7 +569,9 @@ async function loadDayOfWeekChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -482,10 +594,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
       )}, ${j.data.horizon} mo)`;
       if (titleEl) {
         titleEl.textContent = forecastTitle;
-        // --- START OF CHANGE ---
-        // Also update the dataset property for the enlarged view
         titleEl.dataset.chartTitle = forecastTitle;
-        // --- END OF CHANGE ---
       }
       const {
         labels,
@@ -495,25 +604,24 @@ async function loadDayOfWeekChart(filters = currentFilters) {
         forecast_avg_victims,
       } = j.data;
 
-      // --- START OF LEGEND TEXT FIX ---
       const traceHistCount = {
         x: labels,
         y: historical_counts,
         type: "bar",
-        name: "Acc (Hist)", // Shortened Label
+        name: "Acc (Hist)",
         marker: { color: "grey" },
       };
       const traceFcstCount = {
         x: labels,
         y: forecast_counts,
         type: "bar",
-        name: "Acc (Fcst)", // Shortened Label
+        name: "Acc (Fcst)",
         marker: { color: "#4D8DFF" },
       };
       const traceHistAvg = {
         x: labels,
         y: historical_avg_victims,
-        name: "Vic (Hist)", // Shortened Label
+        name: "Vic (Hist)",
         type: "scatter",
         mode: "lines+markers",
         yaxis: "y2",
@@ -522,17 +630,16 @@ async function loadDayOfWeekChart(filters = currentFilters) {
       const traceFcstAvg = {
         x: labels,
         y: forecast_avg_victims,
-        name: "Vic (Fcst)", // Shortened Label
+        name: "Vic (Fcst)",
         type: "scatter",
         mode: "lines+markers",
         yaxis: "y2",
         line: { color: "#ff6700" },
       };
-      // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         barmode: "group",
         margin: { l: 60, r: 80, t: 40, b: 80 },
         yaxis: {
@@ -589,7 +696,7 @@ async function loadDayOfWeekChart(filters = currentFilters) {
 
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         margin: { l: 60, r: 80, t: 40, b: 80 },
         yaxis: {
           title: "Count of Accidents",
@@ -630,7 +737,6 @@ async function loadTopBarangaysChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // Set a default title, which will be updated based on the mode
     titleEl.dataset.chartTitle = "Top 10 Barangays by Accident Count";
     if (!isForecastMode) {
       titleEl.textContent = titleEl.dataset.chartTitle;
@@ -650,7 +756,9 @@ async function loadTopBarangaysChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -668,11 +776,9 @@ async function loadTopBarangaysChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      // --- START OF CHANGE ---
       const forecastTitle = `Top 10 Barangays Forecast (${formatModelName(
         j.data.model_used
       )}, ${j.data.horizon} mo)`;
-      // --- END OF CHANGE ---
 
       if (titleEl) {
         titleEl.textContent = forecastTitle;
@@ -691,12 +797,11 @@ async function loadTopBarangaysChart(filters = currentFilters) {
       const sortedHistorical = forecastData.map((d) => d.historical);
       const sortedForecast = forecastData.map((d) => d.forecast);
 
-      // --- START OF LEGEND TEXT FIX ---
       const traceHist = {
         y: sortedLabels,
         x: sortedHistorical,
         type: "bar",
-        name: "Historical", // Shortened Label
+        name: "Historical",
         orientation: "h",
         marker: { color: "grey" },
       };
@@ -704,15 +809,14 @@ async function loadTopBarangaysChart(filters = currentFilters) {
         y: sortedLabels,
         x: sortedForecast,
         type: "bar",
-        name: "Forecast", // Shortened Label
+        name: "Forecast",
         orientation: "h",
         marker: { color: "#4D8DFF" },
       };
-      // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         barmode: "group",
         margin: { l: 140, r: 40, t: 10, b: 40 },
         yaxis: { title: "" },
@@ -748,7 +852,7 @@ async function loadTopBarangaysChart(filters = currentFilters) {
       };
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         margin: { l: 140, r: 40, t: 10, b: 40 },
         xaxis: { title: "Count of Accidents", gridcolor: "rgba(0,0,0,0.1)" },
       };
@@ -769,7 +873,6 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // Set the default title for non-forecast mode
     titleEl.dataset.chartTitle = "Proportion of Alcohol Involvement by Hour";
     if (!isForecastMode) {
       titleEl.textContent = titleEl.dataset.chartTitle;
@@ -789,7 +892,9 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -809,11 +914,9 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      // --- START OF CHANGE ---
       const forecastTitle = `Forecasted Alcohol Involvement (${formatModelName(
         j.data.model_used
       )}, ${j.data.horizon} mo)`;
-      // --- END OF CHANGE ---
 
       if (titleEl) {
         titleEl.textContent = forecastTitle;
@@ -824,33 +927,31 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
         j.data;
       const x = hours.map(String);
 
-      // --- START OF LEGEND TEXT FIX ---
       const traceYes = {
         x,
         y: forecast_yes_pct,
-        name: "Yes", // Removed "(Forecast)"
+        name: "Yes",
         type: "bar",
         marker: { color: "#4D8DFF" },
       };
       const traceNo = {
         x,
         y: forecast_no_pct,
-        name: "No", // Removed "(Forecast)"
+        name: "No",
         type: "bar",
         marker: { color: "#ff6700" },
       };
       const traceUnknown = {
         x,
         y: forecast_unknown_pct,
-        name: "Unknown", // Removed "(Forecast)"
+        name: "Unknown",
         type: "bar",
         marker: { color: "#A9A9A9" },
       };
-      // --- END OF LEGEND TEXT FIX ---
 
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         barmode: "stack",
         margin: { l: 60, r: 10, t: 40, b: 40 },
         xaxis: { title: "Hour of Day" },
@@ -902,7 +1003,7 @@ async function loadAlcoholByHourChart(filters = currentFilters) {
       };
       const layout = {
         hovermode: "closest",
-        font: { family: "Chillax, sans-serif" }, // <-- Add this line
+        font: { family: "Chillax, sans-serif" },
         barmode: "stack",
         margin: { l: 60, r: 10, t: 40, b: 40 },
         xaxis: { title: "Hour of Day" },
@@ -939,7 +1040,6 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
   const titleEl = chartElement?.parentElement.querySelector(".card-value");
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // Set the default title for both the card and the enlarged view
     titleEl.dataset.chartTitle = "Total Victims by Age";
     if (!isForecastMode) {
       titleEl.textContent = titleEl.dataset.chartTitle;
@@ -959,7 +1059,9 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -975,21 +1077,14 @@ async function loadVictimsByAgeChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      // --- START OF CHANGES ---
-
-      // 1. Create a formatted title using the helper function.
       const forecastTitle = `Victims by Age Forecast (${formatModelName(
         j.data.model_used
       )}, ${j.data.horizon} mo)`;
 
       if (titleEl) {
-        // 2. Update the visible title on the card.
         titleEl.textContent = forecastTitle;
-        // 3. Update the dataset title for the enlarged view to ensure consistency.
         titleEl.dataset.chartTitle = forecastTitle;
       }
-
-      // --- END OF CHANGES ---
 
       renderForecastGroupedBarChart(
         chartId,
@@ -1045,7 +1140,6 @@ async function loadOffenseTypeChart(filters = currentFilters) {
 
   if (titleEl) {
     titleEl.classList.add("clickable-title");
-    // Set the default title for both the card and the enlarged view
     titleEl.dataset.chartTitle = "Accidents by Offense Type";
     if (!isForecastMode) {
       titleEl.textContent = titleEl.dataset.chartTitle;
@@ -1065,7 +1159,9 @@ async function loadOffenseTypeChart(filters = currentFilters) {
       );
     }
 
-    const res = await fetch(`${endpoint}?${params.toString()}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success) {
@@ -1081,23 +1177,14 @@ async function loadOffenseTypeChart(filters = currentFilters) {
     }
 
     if (isForecastMode) {
-      // --- START OF CHANGES ---
-
-      // 1. Define the specific forecast title as requested: "Offense Type Forecast".
-      //    Use the formatModelName helper for a clean model display (e.g., "Random Forest").
       const forecastTitle = `Offense Type Forecast (${formatModelName(
         j.data.model_used
       )}, ${j.data.horizon} mo)`;
 
       if (titleEl) {
-        // 2. Update the visible title on the dashboard card.
         titleEl.textContent = forecastTitle;
-
-        // 3. Update the dataset attribute to ensure the enlarged view has the same, correct title.
         titleEl.dataset.chartTitle = forecastTitle;
       }
-
-      // --- END OF CHANGES ---
 
       renderForecastGroupedBarChart(
         chartId,
@@ -1173,7 +1260,9 @@ async function loadOffenseTypeChart(filters = currentFilters) {
 async function loadGenderKpiCards(filters = currentFilters) {
   try {
     const paramsStr = buildQueryString(filters);
-    const res = await fetch(`/api/gender_kpis?${paramsStr}`);
+    const res = await fetch(`/api/gender_kpis?${paramsStr}`, {
+      cache: "no-cache",
+    });
     const j = await res.json();
 
     if (!j.success || !j.data) {
@@ -1207,7 +1296,7 @@ async function loadKpiCards(filters = currentFilters) {
   ];
   try {
     const paramsStr = buildQueryString(filters);
-    const res = await fetch(`/api/kpis?${paramsStr}`);
+    const res = await fetch(`/api/kpis?${paramsStr}`, { cache: "no-cache" });
     const j = await res.json();
 
     if (!j.success || !j.data) {
@@ -1239,8 +1328,6 @@ async function loadKpiCards(filters = currentFilters) {
   }
 }
 
-// In filter-graphs.js, replace the entire old function with this new one.
-
 async function downloadDashboardAsPDF() {
   const downloadBtn = document.getElementById("downloadPdfBtn");
   if (!downloadBtn) return;
@@ -1250,11 +1337,10 @@ async function downloadDashboardAsPDF() {
   downloadBtn.disabled = true;
 
   try {
-    // 1. Initialize jsPDF for a portrait A4 document
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({
-      orientation: "p", // portrait
-      unit: "mm", // millimeters
+      orientation: "p",
+      unit: "mm",
       format: "a4",
     });
 
@@ -1263,7 +1349,6 @@ async function downloadDashboardAsPDF() {
     const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
     let yPos = MARGIN;
 
-    // --- SECTION 1: REPORT HEADER ---
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(20);
     pdf.text("RTAverse Dashboard Report", PAGE_WIDTH / 2, yPos, {
@@ -1277,20 +1362,17 @@ async function downloadDashboardAsPDF() {
     pdf.text(reportDate, PAGE_WIDTH / 2, yPos, { align: "center" });
     yPos += 15;
 
-    // --- SECTION 2: ACTIVE FILTERS ---
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(12);
     pdf.text("Active Filters:", MARGIN, yPos);
     yPos += 6;
     pdf.setFont("helvetica", "normal");
     const filterText = formatFiltersForPDF();
-    // Use splitTextToSize to handle wrapping long filter lists
     const splitFilters = pdf.splitTextToSize(filterText, CONTENT_WIDTH);
     pdf.text(splitFilters, MARGIN, yPos);
-    yPos += splitFilters.length * 5 + 5; // Adjust spacing based on lines
+    yPos += splitFilters.length * 5 + 5;
 
-    // --- SECTION 3: KPI CARDS (UPDATED) ---
-    pdf.line(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos); // Separator line
+    pdf.line(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos);
     yPos += 10;
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(12);
@@ -1299,8 +1381,6 @@ async function downloadDashboardAsPDF() {
 
     pdf.setFont("helvetica", "normal");
 
-    // --- START OF UPDATE ---
-    // Read all seven KPI values from the DOM
     const kpiAccidents = `Total Accidents: ${
       document.getElementById("kpiAccidents").textContent
     }`;
@@ -1321,7 +1401,6 @@ async function downloadDashboardAsPDF() {
       document.getElementById("kpiUnknown").textContent
     }`;
 
-    // Arrange all KPIs in a clean, multi-row layout
     pdf.text(kpiAccidents, MARGIN, yPos);
     pdf.text(kpiAvgVictims, MARGIN + CONTENT_WIDTH / 2, yPos);
     yPos += 7;
@@ -1335,12 +1414,10 @@ async function downloadDashboardAsPDF() {
     yPos += 7;
 
     pdf.text(kpiUnknown, MARGIN, yPos);
-    yPos += 10; // Add final spacing before the separator line
-    // --- END OF UPDATE ---
+    yPos += 10;
 
-    pdf.line(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos); // Separator line
+    pdf.line(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos);
 
-    // --- SECTION 4: CHARTS ---
     const chartsToInclude = [
       { id: "hourlyBar", title: "Accidents by Hour of Day" },
       { id: "dayOfWeekCombo", title: "Accidents and Severity by Day of Week" },
@@ -1356,51 +1433,39 @@ async function downloadDashboardAsPDF() {
     pdf.addPage();
     yPos = MARGIN;
 
-    // Use a for...of loop to handle async/await correctly
     for (const chartInfo of chartsToInclude) {
       const chartEl = document.getElementById(chartInfo.id);
-      // Check if chart has been rendered and has data
       if (chartEl && chartEl.data) {
-        // --- START OF PDF PAGE BREAK FIX ---
-
-        // 1. Define heights for the title and image
-        const TITLE_PLUS_SPACING = 10; // Space for the title text
-        const CHART_SPACING_AFTER = 15; // Space after the chart
-        const imgHeight = (450 / 800) * CONTENT_WIDTH; //
+        const TITLE_PLUS_SPACING = 10;
+        const CHART_SPACING_AFTER = 15;
+        const imgHeight = (450 / 800) * CONTENT_WIDTH;
         const totalBlockHeight =
           TITLE_PLUS_SPACING + imgHeight + CHART_SPACING_AFTER;
 
-        // 2. Check if the ENTIRE block (title + chart) fits on the current page
         if (
           yPos + totalBlockHeight >
           pdf.internal.pageSize.getHeight() - MARGIN
         ) {
-          pdf.addPage(); //
-          yPos = MARGIN; //
+          pdf.addPage();
+          yPos = MARGIN;
         }
 
-        // 3. Now that we know there's space, add the title
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(14); //
+        pdf.setFontSize(14);
         pdf.text(chartInfo.title, PAGE_WIDTH / 2, yPos, { align: "center" });
-        yPos += TITLE_PLUS_SPACING; // Move yPos down past the title
+        yPos += TITLE_PLUS_SPACING;
 
-        // 4. Convert and add the chart image
         const imgData = await Plotly.toImage(chartEl, {
-          //
           format: "png",
           width: 800,
           height: 450,
         });
 
         pdf.addImage(imgData, "PNG", MARGIN, yPos, CONTENT_WIDTH, imgHeight);
-        yPos += imgHeight + CHART_SPACING_AFTER; // Add spacing after the chart
-
-        // --- END OF PDF PAGE BREAK FIX ---
+        yPos += imgHeight + CHART_SPACING_AFTER;
       }
     }
 
-    // --- FINAL: SAVE THE DOCUMENT ---
     pdf.save("RTAverse_Dashboard_Report.pdf");
   } catch (error) {
     console.error("Failed to generate PDF:", error);
@@ -1417,10 +1482,6 @@ async function downloadDashboardAsPDF() {
 // ==========================================
 
 function zoomChart(chartId, chartTitle) {
-  console.log(
-    `%c ZOOM: zoomChart() called for chart ID: ${chartId}`,
-    "color: #fff; background-color: #0437f2; padding: 4px; border-radius: 4px;"
-  );
   const modal = document.getElementById("zoomModal");
   const modalTitle = document.getElementById("zoomModalTitle");
   const zoomDisplay = document.getElementById("zoomChartDisplay");
@@ -1460,9 +1521,7 @@ function closeZoomModal() {
   const zoomDisplay = document.getElementById("zoomChartDisplay");
   try {
     Plotly.purge(zoomDisplay);
-  } catch (e) {
-    // Ignore
-  }
+  } catch (e) {}
 }
 
 document.addEventListener("click", (e) => {
@@ -1519,9 +1578,8 @@ function initializeLocationFilter() {
 
   async function fetchLocations() {
     try {
-      const { success, barangays } = await (
-        await fetch("/api/barangays")
-      ).json();
+      const res = await fetch("/api/barangays", { cache: "no-cache" });
+      const { success, barangays } = await res.json();
       if (success) allLocations = barangays;
     } catch (e) {
       console.error("Failed to fetch locations:", e);
@@ -1577,6 +1635,34 @@ function initializeLocationFilter() {
   fetchLocations();
 }
 
+function initializeMonthRange() {
+  const from = document.getElementById("monthFrom");
+  const to = document.getElementById("monthTo");
+
+  function enforceMinMax(el) {
+    if (!el.value) return;
+    const min = el.getAttribute("min");
+    if (min && el.value < min) el.value = min;
+  }
+  [from, to].forEach((el) =>
+    el?.addEventListener("change", () => enforceMinMax(el))
+  );
+}
+
+function initializeTimePickers() {
+  const config = {
+    enableTime: true,
+    noCalendar: true,
+    minuteIncrement: 60,
+    altInput: true,
+    altFormat: "h:i K",
+    time_24hr: false,
+    dateFormat: "H:i",
+  };
+  timeFromPicker = flatpickr("#timeFrom", config);
+  timeToPicker = flatpickr("#timeTo", config);
+}
+
 function initializeFilterUI() {
   function initDualRange(min, max, fromId, toId, fillId, boxFromId, boxToId) {
     const fromSlider = document.getElementById(fromId),
@@ -1609,15 +1695,9 @@ function initializeFilterUI() {
     });
     redraw();
   }
-  initDualRange(
-    0,
-    23,
-    "hourFrom",
-    "hourTo",
-    "hourFill",
-    "hourFromBox",
-    "hourToBox"
-  );
+
+  // REMOVED: initDualRange for hours is no longer needed
+
   initDualRange(
     0,
     100,
@@ -1630,15 +1710,16 @@ function initializeFilterUI() {
 
   initializeLocationFilter();
   initializeGenderFilter();
+  // --- START: ADD CALLS TO NEW INITIALIZERS ---
+  initializeMonthRange();
+  initializeTimePickers();
+  // --- END: ADD CALLS TO NEW INITIALIZERS ---
 }
 
-// In filter-graphs.js, update the initializeGenderFilter function
 function initializeGenderFilter() {
   const genderInput = document.getElementById("genderFilter");
   const dropdownList = document.getElementById("genderDropdownList");
-  // --- START: ADD "Unknown" TO THE LIST ---
   const allGenders = ["All Genders", "Male", "Female", "Unknown"];
-  // --- END: ADD "Unknown" TO THE LIST ---
 
   function showGenderDropdown(list) {
     dropdownList.innerHTML = list.length
@@ -1673,32 +1754,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const visGrid = document.querySelector(".vis-grid");
   if (visGrid) {
     visGrid.addEventListener("click", function (event) {
-      console.log("PROBE 1: Grid was clicked. Element:", event.target);
-
       const titleElement = event.target.closest(".card-value");
-
       if (titleElement) {
-        console.log(
-          "PROBE 2: Found a title element. Now checking its data attributes..."
-        );
-        console.log("--> data-chart-id is:", titleElement.dataset.chartId);
-        console.log(
-          "--> data-chart-title is:",
-          titleElement.dataset.chartTitle
-        );
-
         if (titleElement.dataset.chartId && titleElement.dataset.chartTitle) {
-          console.log(
-            "%c SUCCESS: Attributes found! Calling zoomChart.",
-            "color: #00ff00; font-weight: bold;"
-          );
           zoomChart(
             titleElement.dataset.chartId,
             titleElement.dataset.chartTitle
-          );
-        } else {
-          console.error(
-            "ERROR: The clicked title element is MISSING the required 'data-chart-id' or 'data-chart-title' attributes. This is likely a browser caching issue."
           );
         }
       }

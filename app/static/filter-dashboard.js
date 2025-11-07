@@ -175,7 +175,7 @@ function applyFilters() {
   function validBounds(ym) {
     if (!ym) return true;
     const [y, m] = ym.split("-").map(Number);
-    return y >= 2015 && y <= 2025 && m >= 1 && m <= 12;
+    return y >= 2015 && m >= 1 && m <= 12;
   }
 
   // --- MODIFICATION: Add error class logic ---
@@ -199,7 +199,7 @@ function applyFilters() {
       } else {
         // This is the other error (e..g., year 2014)
         dateError.textContent =
-          "Please choose months between Jan 2015 and Dec 2025.";
+          "Please choose months between Jan 2015 onwards.";
       }
       dateError.classList.remove("hidden");
       // --- END: Set specific error message ---

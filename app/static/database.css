@@ -978,7 +978,7 @@ button.primary:disabled {
   top: 0;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(4, 55, 242, 0.15);
-  padding-right: 20px !important; /* Creates space for sorting arrows */
+  padding-right: 35px !important; /* Creates space for sorting arrows */
 }
 
 /* First column header (checkbox) */

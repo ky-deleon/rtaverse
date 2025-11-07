@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from .database import list_tables
 from ..extensions import get_engine   # ⬅ use engine for pandas
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score, mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 import joblib
 import os
 
@@ -145,8 +145,8 @@ def build_forecast_map_html(
         return m.get_root().render()
         
     # ==============================================================================
-    # PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION
-    # ==============================================================================
+# PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION (NOW CONSISTENT)
+# ==============================================================================
     print(f"\n--- [EVALUATION] Generating Baseline XGBoost Performance for table: '{table}' (All Hours) ---")
     df_eval = df_full.copy()
     df_eval["DATE_COMMITTED"] = pd.to_datetime(df_eval["DATE_COMMITTED"], errors="coerce")
@@ -156,7 +156,7 @@ def build_forecast_map_html(
     time_cluster_cols = [c for c in df_eval.columns if 'TIME_CLUSTER' in str(c)]
     for col in time_cluster_cols:
         df_eval[col] = pd.to_numeric(df_eval[col], errors='coerce').fillna(0).astype(int)
-    
+
     agg_dict = {col: 'sum' for col in time_cluster_cols}
     agg_dict['OFFENSE'] = 'size'
 
@@ -174,27 +174,60 @@ def build_forecast_map_html(
     ts_data_unfiltered['quarter_of_year'] = ts_data_unfiltered['DATE_COMMITTED'].dt.quarter
     ts_data_unfiltered = ts_data_unfiltered.dropna().reset_index(drop=True)
 
+    # --- START OF THE UPGRADED LOGIC ---
     if not ts_data_unfiltered.empty:
         y_eval = ts_data_unfiltered['accident_count']
-        X_eval = ts_data_unfiltered.drop(columns=['accident_count','DATE_COMMITTED'])
-        X_train, X_test, y_train, y_test = train_test_split(X_eval, y_eval, test_size=0.2, shuffle=False)
+        X_eval = ts_data_unfiltered.drop(columns=['accident_count', 'DATE_COMMITTED'])
 
-        if not X_test.empty:
-            eval_model = XGBRegressor(objective='count:poisson', n_estimators=1000, learning_rate=0.01, max_depth=4, random_state=42)
-            eval_model.fit(X_train, y_train, verbose=False)
-            y_pred_test = eval_model.predict(X_test)
-            mae = mean_absolute_error(y_test, y_pred_test)
-            mape = mean_absolute_percentage_error(y_test[y_test > 0], y_pred_test[y_test > 0]) * 100 if np.any(y_test > 0) else 0.0
-            r2 = r2_score(y_test, y_pred_test)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-            print(f"Mean Absolute Error (MAE): {mae:.2f}")
-            print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
-            print(f"R-squared (R²): {r2:.2f}")
-            print(f"Root Mean Squared Error (RMSE): {rmse:.2f}\n")
+        # Use TimeSeriesSplit for more robust cross-validation
+        tscv = TimeSeriesSplit(n_splits=4)
+        all_y_test, all_forecasts = [], []
+        
+        print("Starting Cross-Validation for Performance Metrics...")
+        
+        for fold, (train_index, test_index) in enumerate(tscv.split(X_eval), 1):
+            X_train, X_test = X_eval.iloc[train_index], X_eval.iloc[test_index]
+            y_train, y_test = y_eval.iloc[train_index], y_eval.iloc[test_index]
+
+            if X_test.empty:
+                continue
+
+            # Add early_stopping_rounds to prevent overfitting
+            eval_model = XGBRegressor(objective='count:poisson', n_estimators=1000, learning_rate=0.01, 
+                                    max_depth=4, min_child_weight=1, gamma=0.1, random_state=42,
+                                    early_stopping_rounds=10)
+            
+            eval_model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+            forecasts = eval_model.predict(X_test)
+
+            all_y_test.append(y_test)
+            all_forecasts.append(forecasts)
+            fold_mae = mean_absolute_error(y_test, forecasts)
+            print(f"Fold {fold} complete. MAE: {fold_mae:.2f}")
+
+        print("Cross-validation complete.")
+
+        # Aggregate results across all folds for a single set of metrics
+        if all_y_test:
+                y_test_full = pd.concat(all_y_test)
+                forecasts_full = np.concatenate(all_forecasts)
+
+                mae = mean_absolute_error(y_test_full, forecasts_full)
+                mse = mean_squared_error(y_test_full, forecasts_full) # <-- NEW: Calculate MSE
+                mape = mean_absolute_percentage_error(y_test_full.replace(0, 1e-6), forecasts_full) * 100
+                r2 = r2_score(y_test_full, forecasts_full)
+                rmse = np.sqrt(mse) # <-- Can now reuse the mse variable
+                
+                print(f"Mean Absolute Error (MAE): {mae:.2f}")
+                print(f"Mean Absolute Percentage Error (MAPE): {mape:.2f}%")
+                print(f"R-squared (R²): {r2:.2f}")
+                print(f"Mean Squared Error (MSE): {mse:.2f}") # <-- NEW: Print MSE
+                print(f"Root Mean Squared Error (RMSE): {rmse:.2f}\n")
         else:
-            print("Warning: Test set for evaluation was empty. Skipping metric calculation.\n")
+            print("Warning: Not enough data to perform cross-validation.\n")
     else:
         print("Warning: Not enough data in the full dataset to perform an evaluation.\n")
+    # --- END OF THE UPGRADED LOGIC ---
 
     # ==============================================================================
     # PART 2: FILTERED FORECASTING FOR THE MAP VISUALIZATION
