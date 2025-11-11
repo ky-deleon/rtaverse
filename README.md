@@ -1,4 +1,4 @@
-# 🚦 RTAverse: A Machine Learning-Based Analysis and Forecasting of Road Traffic Accidents in Angeles Cityy
+# 🚦 RTAverse: A Machine Learning-Based Analysis and Forecasting of Road Traffic Accidents in Angeles City
 
 **RTAverse** is a machine learning-based forecasting system designed to analyze and predict road traffic accidents (RTAs) in Angeles City, Philippines. The project's primary goal is to shift local traffic management from a reactive to a **proactive, data-driven approach**.
 
