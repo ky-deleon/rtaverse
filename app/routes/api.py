@@ -13,6 +13,7 @@ import folium
 from mysql.connector.errors import ProgrammingError
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import text
 
 try:
     from fpdf import FPDF
@@ -111,6 +112,29 @@ def build_filter_query(cols, req_obj=None):
             for i, offense_val in enumerate(offense_raw):
                 params[f"offense_{i}"] = offense_val
             where.append(f"`{offense_col}` IN ({', '.join(offense_placeholders)})")
+
+    # --- START OF NEW CODE ---
+    # Season Filter
+    season_raw = [s.strip().capitalize() for s in (q.get("season") or "").split(",") if s.strip()]
+    if season_raw:
+        # Prioritize the reconstructed cluster column for filtering
+        cat_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
+        onehot_any = any(f"SEASON_CLUSTER_{v}" in cols for v in ["Dry", "Rainy"])
+
+        if cat_col:
+            season_placeholders = [f"%(season_{i})s" for i, _ in enumerate(season_raw)]
+            for i, season_val in enumerate(season_raw):
+                params[f"season_{i}"] = season_val
+            where.append(f"`{cat_col}` IN ({', '.join(season_placeholders)})")
+        elif onehot_any:
+            # Fallback to one-hot encoded columns if the cluster column isn't there
+            pieces = []
+            for season_val in season_raw:
+                if f"SEASON_CLUSTER_{season_val}" in cols:
+                    pieces.append(f"COALESCE(`SEASON_CLUSTER_{season_val}`, 0) = 1")
+            if pieces:
+                where.append(f"({' OR '.join(pieces)})")
+    # --- END OF NEW CODE ---
 
     # Hour Range
     hour_from, hour_to = q.get("hour_from"), q.get("hour_to")
@@ -627,36 +651,48 @@ def overall_timeseries():
 import traceback
 
 
+# In api.py
+
 @api_bp.route("/folium_map")
 def folium_map():
-    # This route now ONLY gathers filter parameters and passes them on.
-    # All data loading and filtering logic is now handled inside build_forecast_map_html.
-    
+    if not is_logged_in():
+        return Response("<h4>Not authorized.</h4>", mimetype='text/html')
+
     table = session.get('forecast_table', 'accidents')
     if table not in list_tables():
-        # Return a simple HTML response for "table not found"
-        return Response("<h4>No data: The selected table was not found.</h4>", mimetype='text/html')
-        
+        return Response(f"<h4>Error: Table '{table}' not found.</h4>", mimetype='text/html')
+
     try:
+        conn = get_engine().connect()
+        # --- START OF FIX ---
+        # Get all column names to build the filter query
+        result = conn.execute(text(f"SHOW COLUMNS FROM `{table}`"))
+        cols = {str(row[0]) for row in result.fetchall()}
+        conn.close()
+
+        # Build the WHERE clause and parameters from the request arguments
+        where_sql, params = build_filter_query(cols, req_obj=request)
+        # --- END OF FIX ---
+        
         q = request.args
         
-        # Pass all filter parameters directly to the forecasting function
+        # Pass all filter parameters, INCLUDING the new where_sql and params
         html = build_forecast_map_html(
             table=table,
+            where_sql=where_sql, # Pass the generated SQL
+            params=params,       # Pass the parameters for the query
             start_str=q.get("start"),
             end_str=q.get("end"),
             time_from=q.get("time_from"),
             time_to=q.get("time_to"),
-            legacy_time=q.get("legacy_time", "Live"), # Default to "Live" if not provided
+            legacy_time=q.get("legacy_time", "Live"),
             barangay_filter=q.get("barangay")
         )
         return Response(html, mimetype='text/html')
 
     except Exception as e:
         traceback.print_exc()
-        return Response(f"<h4>An unexpected error occurred while generating the map.</h4><pre>{e}</pre>", mimetype='text/html')
-
-# In api.py
+        return Response(f"<h4>An unexpected error occurred.</h4><pre>{e}</pre>", mimetype='text/html')
 
 @api_bp.route("/upload_files", methods=["POST"])
 def upload_files():
@@ -908,7 +944,8 @@ def get_kpis():
             "total_accidents": int(total_accidents),
             "total_victims": int(total_victims),
             "avg_victims_per_accident": float(avg_victims_per_accident),
-            "alcohol_involvement_rate": float(alcohol_involvement_rate) # The frontend will multiply by 100
+            "alcohol_involvement_rate": float(alcohol_involvement_rate),
+            "alcohol_cases": int(alcohol_cases)
         })
 
     except ProgrammingError as e:
@@ -950,6 +987,48 @@ def get_offense_types():
             "values": [r[1] for r in rows]
         })
     except Exception as e:
+        return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>")
+
+# In api.py
+
+@api_bp.route("/by_season", methods=["GET"])
+def get_by_season():
+    """
+    Gets historical accident counts grouped by season using a direct SQL query.
+    This is designed to be consistent with get_offense_types and avoid the
+    forecasting pre-processing pipeline.
+    """
+    if not is_logged_in(): 
+        return jsonify(success=False, message="Not authorized"), 401
+        
+    table = session.get("forecast_table", "accidents")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM `{table}`")
+        cols = {str(r[0]) for r in cur.fetchall()}
+        
+        # Find the correct season column, prioritizing the processed one
+        season_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
+        if not season_col:
+            return jsonify(success=False, message="No season column found in the table.")
+
+        where_sql, params = build_filter_query(cols)
+        
+        sql = f"SELECT `{season_col}`, COUNT(*) as cnt FROM `{table}` {where_sql} GROUP BY `{season_col}` ORDER BY `{season_col}`"
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # The data structure must match what the historical chart now expects
+        return jsonify(success=True, data={
+            "labels": [r[0] for r in rows],
+            "values": [r[1] for r in rows]
+        })
+    except Exception as e:
+        import traceback
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>")
 
 @api_bp.route("/gender_kpis", methods=["GET"])
@@ -1455,6 +1534,47 @@ def forecast_offense_types():
             params=params
         )
         
+        return jsonify(**result)
+
+    except Exception as e:
+        import traceback
+        return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
+
+@api_bp.route("/forecast/by_season", methods=["GET"])
+def forecast_by_season():
+    if not is_logged_in():
+        return jsonify(success=False, message="Not authorized"), 401
+
+    table = session.get("forecast_table", "accidents")
+    model = request.args.get('model', 'random_forest')
+    horizon = int(request.args.get('horizon', 12))
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM `{table}`")
+        cols = {str(r[0]) for r in cur.fetchall()}
+        cur.close()
+        conn.close()
+
+        # 1. Find the correct season column name, prioritizing the cluster one
+        season_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
+        if not season_col:
+            return jsonify(success=False, message="No season column (e.g., SEASON_CLUSTER) found.")
+
+        # 2. Get the standard filters from the user request
+        where_sql, params = build_filter_query(cols)
+
+        # 3. Run the forecast, grouping by the season column
+        result = run_categorical_forecast(
+            table_name=table,
+            grouping_key=season_col,
+            model_type=model,
+            forecast_horizon=horizon,
+            where_sql=where_sql,
+            params=params
+        )
+
         return jsonify(**result)
 
     except Exception as e:

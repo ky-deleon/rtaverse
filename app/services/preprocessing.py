@@ -64,6 +64,13 @@ def make_display_copy(df: pd.DataFrame) -> pd.DataFrame:
         if "ALCOHOL_USED_Yes" in out.columns: a.loc[pd.to_numeric(out["ALCOHOL_USED_Yes"], errors="coerce").fillna(0).astype(int).eq(1)] = "Yes"
         if "ALCOHOL_USED_Unknown" in out.columns: a.loc[pd.to_numeric(out["ALCOHOL_USED_Unknown"], errors="coerce").fillna(0).astype(int).eq(1)] = "Unknown"
         out["ALCOHOL_USED_CLUSTER"] = a.fillna("No")
+    if any(c.startswith("Season_") for c in out.columns):
+        s = pd.Series(pd.NA, index=out.index, dtype="object")
+        if "Season_Rainy" in out.columns:
+            s.loc[pd.to_numeric(out["Season_Rainy"], errors="coerce").fillna(0).astype(int).eq(1)] = "Rainy"
+        if "Season_Dry" in out.columns:
+            s.loc[pd.to_numeric(out["Season_Dry"], errors="coerce").fillna(0).astype(int).eq(1)] = "Dry"
+        out["Season"] = s.fillna("Unknown") # <--- ADDED SEASON CLUSTER RECONSTRUCTION
     return out
 
 def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
@@ -86,11 +93,19 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
         df = df.rename(columns={"DATE COMMITTED": "DATE_COMMITTED"})
     if "DATE_COMMITTED" in df.columns:
         dt = pd.to_datetime(df["DATE_COMMITTED"], errors="coerce")
-        df = df[~dt.isna()].copy()
         df["MONTH_SIN"]    = np.sin(2*np.pi*dt.dt.month/12.0)
         df["MONTH_COS"]    = np.cos(2*np.pi*dt.dt.month/12.0)
         df["DAYOWEEK_SIN"] = np.sin(2*np.pi*dt.dt.dayofweek/7.0)
         df["DAYOWEEK_COS"] = np.cos(2*np.pi*dt.dt.dayofweek/7.0)
+
+    # --- NEW: Add SEASON_CLUSTER based on PAGASA definition ---
+        month = dt.dt.month
+        conditions = [
+            (month >= 6) & (month <= 11),  # Rainy: June to November
+            (month == 12) | (month <= 5)   # Dry: December to May
+        ]
+        choices = ["Rainy", "Dry"]
+        df["SEASON_CLUSTER"] = np.select(conditions, choices, default="Unknown").astype("object")
 
     # --- Time → hour committed (robust) --------------------------------------
     # Accept TIME_COMMITTED or legacy "TIME COMMITTED"
@@ -128,10 +143,12 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
 
         df["HOUR_COMMITTED"] = df["TIME_COMMITTED"].apply(_extract_hour)
 
+    # --- START OF FIX ---
     if "HOUR_COMMITTED" in df.columns:
         df["HOUR_COMMITTED"] = pd.to_numeric(df["HOUR_COMMITTED"], errors="coerce")
-        df = df[~df["HOUR_COMMITTED"].isna()].copy()
-        df["HOUR_COMMITTED"] = df["HOUR_COMMITTED"].astype(int).clip(lower=0, upper=23)
+        # MODIFIED: Use nullable Int64 to handle missing hours instead of dropping rows.
+        df["HOUR_COMMITTED"] = df["HOUR_COMMITTED"].astype("Int64").clip(lower=0, upper=23)
+    # --- END OF FIX ---
 
     # --- Clean up legacy raw columns if still present -------------------------
     df.drop(columns=["DATE COMMITTED", "TIME COMMITTED"], inplace=True, errors="ignore")
@@ -214,8 +231,9 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
     if "HOUR_COMMITTED" in df.columns:
         df["TIME_CLUSTER"] = df["HOUR_COMMITTED"].apply(_time_cluster).astype("object")
 
+
     # --- One-hot encode (NO drop_first to match Colab/your visuals) ----------
-    for cat_col in ["GENDER", "ALCOHOL_USED", "TIME_CLUSTER"]:
+    for cat_col in ["GENDER", "ALCOHOL_USED", "TIME_CLUSTER", "SEASON_CLUSTER"]: # <-- ADDED
         if cat_col in df.columns:
             dummies = pd.get_dummies(df[cat_col], prefix=cat_col, dtype="int64")  # keep all categories
             # ensure stable set of expected columns
@@ -224,6 +242,9 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
                 "ALCOHOL_USED": ["ALCOHOL_USED_No", "ALCOHOL_USED_Yes", "ALCOHOL_USED_Unknown"],
                 "TIME_CLUSTER": ["TIME_CLUSTER_Midnight", "TIME_CLUSTER_Morning",
                                  "TIME_CLUSTER_Midday", "TIME_CLUSTER_Evening"],
+                # --- NEW ---
+                "SEASON_CLUSTER": ["SEASON_CLUSTER_Dry", "SEASON_CLUSTER_Rainy", "SEASON_CLUSTER_Unknown"],
+                # --- END NEW ---
             }[cat_col]
             for col in expected:
                 if col not in dummies.columns:
@@ -247,6 +268,17 @@ def apply_additional_preprocessing(merged: pd.DataFrame) -> pd.DataFrame:
         if "ALCOHOL_USED_Unknown" in df.columns:
             a.loc[pd.to_numeric(df["ALCOHOL_USED_Unknown"], errors="coerce").fillna(0).astype(int).eq(1)] = "Unknown"
         df["ALCOHOL_USED_CLUSTER"] = a.fillna("No")
+
+    # --- NEW: Reconstruct SEASON_CLUSTER from dummies ---
+    if any(c.startswith("SEASON_CLUSTER_") for c in df.columns):
+        s = pd.Series(pd.NA, index=df.index, dtype="object")
+        if "SEASON_CLUSTER_Rainy" in df.columns:
+            s.loc[pd.to_numeric(df["SEASON_CLUSTER_Rainy"], errors="coerce").fillna(0).astype(int).eq(1)] = "Rainy"
+        if "SEASON_CLUSTER_Dry" in df.columns:
+            s.loc[pd.to_numeric(df["SEASON_CLUSTER_Dry"], errors="coerce").fillna(0).astype(int).eq(1)] = "Dry"
+        
+        # Anything not explicitly 'Rainy' or 'Dry' will default to 'Unknown'.
+        df["SEASON_CLUSTER"] = s.fillna("Unknown") 
 
     return df
 
@@ -307,6 +339,7 @@ def process_merge_and_save_to_db(
             "LONGITUDE": "LONGITUDE",
             "VICTIM COUNT": "VICTIM COUNT",
             "SUSPECT COUNT": "SUSPECT COUNT",
+            "SEASON": "SEASON"
         }
         canon_lookup = {_norm_key(k): v for k, v in CANON.items()}
         new_cols = {}
@@ -371,6 +404,7 @@ def process_merge_and_save_to_db(
         "ALCOHOL_USED": "VARCHAR(32)",
         "VICTIM COUNT": "INT",
         "SUSPECT COUNT": "INT",
+        "SEASON_CLUSTER": "VARCHAR(32)", # <--- ADDED
     }
     def _sql_type(col: str) -> str:
         return TYPE_MAP.get(col, "TEXT")

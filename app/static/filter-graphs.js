@@ -56,6 +56,7 @@ function getFilterState() {
     dayOfWeek: getCheckedValues("dowGroup"),
     alcohol: getCheckedValues("alcoholGroup"),
     offenseType: getCheckedValues("offenseGroup"),
+    season: getCheckedValues("seasonGroup"),
     hourFrom: timeFromVal ? timeFromVal.split(":")[0] : null,
     hourTo: timeToVal ? timeToVal.split(":")[0] : null,
     ageFrom: +document.getElementById("ageFromBox").value,
@@ -83,6 +84,7 @@ function buildQueryString(filters) {
   if (filters.alcohol?.length) params.set("alcohol", filters.alcohol.join(","));
   if (filters.offenseType?.length)
     params.set("offense_type", filters.offenseType.join(","));
+  if (filters.season?.length) params.set("season", filters.season.join(","));
   if (filters.hourFrom !== null)
     params.set("hour_from", String(filters.hourFrom));
   if (filters.hourTo !== null) params.set("hour_to", String(filters.hourTo));
@@ -145,6 +147,7 @@ async function loadAllVisualizations(filters) {
       loadAlcoholByHourChart(filters),
       loadVictimsByAgeChart(filters),
       loadOffenseTypeChart(filters),
+      loadSeasonChart(filters),
     ];
     await Promise.all(chartPromises);
   } catch (error) {
@@ -171,7 +174,7 @@ function clearFilters() {
   document.getElementById("genderFilter").value = "";
   document
     .querySelectorAll(
-      "#dowGroup input:checked, #alcoholGroup input:checked, #offenseGroup input:checked"
+      "#dowGroup input:checked, #alcoholGroup input:checked, #offenseGroup input:checked, #seasonGroup input:checked"
     )
     .forEach((cb) => (cb.checked = false));
 
@@ -1257,6 +1260,115 @@ async function loadOffenseTypeChart(filters = currentFilters) {
   }
 }
 
+async function loadSeasonChart(filters = currentFilters) {
+  const chartId = "seasonChart";
+  const chartElement = document.getElementById(chartId);
+  const titleEl = chartElement?.parentElement.querySelector(".card-value");
+
+  if (titleEl) {
+    titleEl.classList.add("clickable-title");
+    titleEl.dataset.chartTitle = "Accidents by Season";
+  }
+
+  try {
+    // --- START OF FIX ---
+    // Dynamically choose the endpoint based on the forecast mode toggle
+    const endpoint = isForecastMode
+      ? "/api/forecast/by_season"
+      : "/api/by_season";
+    const params = new URLSearchParams(buildQueryString(filters));
+
+    if (isForecastMode) {
+      params.set("model", document.getElementById("forecastModelSelect").value);
+      params.set(
+        "horizon",
+        document.getElementById("forecastHorizonInput").value
+      );
+    }
+    // --- END OF FIX ---
+
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      cache: "no-cache",
+    });
+    const j = await res.json();
+
+    if (!j.success) {
+      showNoData(chartId, j.message || "Error loading seasonal data.");
+      if (titleEl) titleEl.textContent = "Accidents by Season — Error";
+      return;
+    }
+
+    // Check if the response has any data to plot
+    const hasData = isForecastMode
+      ? j.data?.labels?.length
+      : j.data?.values?.some((v) => v > 0);
+    if (!hasData) {
+      showNoData(chartId, "No data available for seasonal analysis.");
+      return;
+    }
+
+    if (isForecastMode) {
+      // Logic for when Forecast Mode is ON (remains unchanged)
+      const forecastTitle = `Seasonal Forecast (${formatModelName(
+        j.data.model_used
+      )}, ${j.data.horizon} mo)`;
+      if (titleEl) {
+        titleEl.textContent = forecastTitle;
+        titleEl.dataset.chartTitle = forecastTitle;
+      }
+      renderForecastGroupedBarChart(
+        chartId,
+        j.data, // This data structure includes 'historical' and 'forecast' keys
+        "Season",
+        "Total Accidents"
+      );
+    } else {
+      // NEW LOGIC: For when Forecast Mode is OFF
+      if (titleEl) {
+        titleEl.textContent = "Accidents by Season (Historical)";
+        titleEl.dataset.chartTitle = "Accidents by Season (Historical)";
+      }
+
+      // Use the simple bar chart renderer for the historical data from our new endpoint
+      // This data structure now has 'labels' and 'values'
+      const trace = {
+        x: j.data.labels,
+        y: j.data.values, // Use the new 'values' key
+        type: "bar",
+        text: j.data.values.map(String),
+        textposition: "outside",
+        marker: { color: "#4D8DFF" },
+      };
+
+      const maxValue = Math.max(...j.data.values);
+      const yAxisRange = [0, maxValue * 1.15];
+
+      const layout = {
+        hovermode: "closest",
+        font: { family: "Chillax, sans-serif" },
+        margin: { l: 60, r: 10, t: 20, b: 40 },
+        xaxis: { title: "Season" },
+        yaxis: {
+          title: "Total Accidents",
+          range: yAxisRange,
+        },
+        showlegend: false,
+      };
+
+      Plotly.newPlot(chartId, [trace], layout, {
+        displayModeBar: false,
+        responsive: true,
+      });
+    }
+  } catch (e) {
+    console.error("Season Chart Error:", e);
+    showNoData(
+      chartId,
+      "A critical error occurred while fetching seasonal data."
+    );
+  }
+}
+
 async function loadGenderKpiCards(filters = currentFilters) {
   try {
     const paramsStr = buildQueryString(filters);
@@ -1308,7 +1420,9 @@ async function loadKpiCards(filters = currentFilters) {
       total_victims,
       avg_victims_per_accident,
       alcohol_involvement_rate,
+      alcohol_cases, // 1. Add the new variable here
     } = j.data;
+
     document.getElementById("kpiAccidents").textContent =
       total_accidents.toLocaleString();
     document.getElementById("kpiVictims").textContent =
@@ -1316,9 +1430,11 @@ async function loadKpiCards(filters = currentFilters) {
     document.getElementById("kpiAvgVictims").textContent = (
       avg_victims_per_accident || 0
     ).toFixed(2);
+
+    // 2. Update the text content to include both the percentage and the raw number
     document.getElementById("kpiAlcoholPct").textContent = `${(
       (alcohol_involvement_rate || 0) * 100
-    ).toFixed(1)}%`;
+    ).toFixed(1)}% (${(alcohol_cases || 0).toLocaleString()})`;
   } catch (e) {
     console.error("KPI Error:", e);
     kpiIds.forEach((id) => {
@@ -1428,6 +1544,7 @@ async function downloadDashboardAsPDF() {
       },
       { id: "victimsByAge", title: "Total Victims by Age" },
       { id: "offenseTypeChart", title: "Accidents by Offense Type" },
+      { id: "seasonChart", title: "Accidents by Season" },
     ];
 
     pdf.addPage();

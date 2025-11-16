@@ -258,6 +258,13 @@
           <div id="offenseTypeChart" style="height: 300px"></div>
           <div id="offenseTypeLegend" class="custom-legend"></div>
         </div>
+
+        <div class="card col-span-2">
+          <div class="card-value" data-chart-id="seasonChart" data-chart-title="Accidents by Season">
+            Accidents by Season
+          </div>
+          <div id="seasonChart" style="height: 300px"></div>
+        </div>
       </div>
       {% endif %}
     </main>
@@ -409,6 +416,14 @@
             <label><input type="checkbox" value="Yes" /> Yes</label>
             <label><input type="checkbox" value="No" /> No</label>
             <label><input type="checkbox" value="Unknown" /> Unknown</label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Season</label>
+          <div class="checkbox-row" id="seasonGroup">
+            <label><input type="checkbox" value="Rainy" /> Rainy</label>
+            <label><input type="checkbox" value="Dry" /> Dry</label>
           </div>
         </div>
 

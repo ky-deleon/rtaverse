@@ -143,10 +143,18 @@ def build_forecast_map_html(
     if df_full.empty:
         m = folium.Map(location=DEFAULT_LOCATION, zoom_start=11)
         return m.get_root().render()
+    
+    df_full["ACCIDENT_HOTSPOT"] = pd.to_numeric(df_full["ACCIDENT_HOTSPOT"], errors='coerce').fillna(-1).astype(int)
+    df_full = df_full[df_full['ACCIDENT_HOTSPOT'] != -1].copy()
+    
+    # If filtering removes all data, return an empty map.
+    if df_full.empty:
+        m = folium.Map(location=DEFAULT_LOCATION, zoom_start=11)
+        return m.get_root().render()
         
     # ==============================================================================
-# PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION (NOW CONSISTENT)
-# ==============================================================================
+    # PART 1: UNFILTERED BASELINE PERFORMANCE EVALUATION (NOW CONSISTENT)
+    # ==============================================================================
     print(f"\n--- [EVALUATION] Generating Baseline XGBoost Performance for table: '{table}' (All Hours) ---")
     df_eval = df_full.copy()
     df_eval["DATE_COMMITTED"] = pd.to_datetime(df_eval["DATE_COMMITTED"], errors="coerce")
@@ -227,21 +235,13 @@ def build_forecast_map_html(
             print("Warning: Not enough data to perform cross-validation.\n")
     else:
         print("Warning: Not enough data in the full dataset to perform an evaluation.\n")
-    # --- END OF THE UPGRADED LOGIC ---
 
-    # ==============================================================================
-    # PART 2: FILTERED FORECASTING FOR THE MAP VISUALIZATION
-    # ==============================================================================
-    df = df_full.copy() 
-    df["DATE_COMMITTED"] = pd.to_datetime(df["DATE_COMMITTED"], errors="coerce")
-    df = df.dropna(subset=["DATE_COMMITTED"]).copy()
-    df["HOUR_COMMITTED"] = pd.to_numeric(df["HOUR_COMMITTED"], errors="coerce").astype("Int64")
-    df = df.dropna(subset=["HOUR_COMMITTED"]).copy()
-    df["HOUR_COMMITTED"] = df["HOUR_COMMITTED"].astype(int)
-    df["ACCIDENT_HOTSPOT"] = pd.to_numeric(df["ACCIDENT_HOTSPOT"], errors="coerce").fillna(-1).astype(int)
+    df_filtered = df_full.copy()
+    df_filtered = df_filtered[df_filtered['ACCIDENT_HOTSPOT'] != -1].copy()
+    df_filtered["DATE_COMMITTED"] = pd.to_datetime(df_filtered["DATE_COMMITTED"], errors="coerce")
+    df_filtered = df_filtered.dropna(subset=["DATE_COMMITTED"]).copy()
+    df_filtered["HOUR_COMMITTED"] = pd.to_numeric(df_filtered["HOUR_COMMITTED"], errors="coerce").astype("Int64")
     
-    # This part of the logic remains unchanged, as it performs the time-based filtering correctly
-    # on the already-filtered df_full
     def parse_hour(hmm: str) -> int | None:
         if not hmm: return None
         try: return int(hmm.split(":")[0])
@@ -251,39 +251,22 @@ def build_forecast_map_html(
     display_hour_str = ""
     use_range = (h_from is not None) and (h_to is not None)
 
-    df_time_filtered = df
     if use_range:
+        # Time range is specified, so we filter by it.
         if h_from <= h_to: hours = list(range(h_from, h_to + 1))
         else: hours = list(range(h_from, 24)) + list(range(0, h_to + 1))
-        df_time_filtered = df[df["HOUR_COMMITTED"].isin(hours)].copy()
+        
+        # Ensure we don't try to filter on rows with no hour data
+        df_filtered = df_filtered.dropna(subset=["HOUR_COMMITTED"])
+        df_filtered = df_filtered[df_filtered["HOUR_COMMITTED"].astype(int).isin(hours)].copy()
         display_hour_str = f"{h_from:02d}:00–{h_to:02d}:00"
     else:
-        t = (legacy_time or "Live").lower()
-        if t == "live":
-            try:
-                import pytz; tz = pytz.timezone("Asia/Manila"); current_hour = datetime.now(tz).hour
-            except Exception: current_hour = pd.Timestamp.now().hour
-            df_time_filtered = df[df["HOUR_COMMITTED"] == int(current_hour)].copy()
-            display_hour_str = f"Live ({current_hour:02d}:00)"
-        elif t == "all":
-            df_time_filtered = df.copy()
-            display_hour_str = "All Hours"
-        else:
-            try:
-                hour_val = max(0, min(23, int(t)))
-                df_time_filtered = df[df["HOUR_COMMITTED"] == hour_val].copy()
-                display_hour_str = f"Hour {hour_val:02d}:00"
-            except Exception:
-                df_time_filtered = df.copy()
-                display_hour_str = "All Hours"
+        # If no time filter is applied, we assume a full day's view
+        display_hour_str = "00:00–23:00"
 
-    df_filtered = df_time_filtered
-    if barangay_filter:
-        barangays = [b.strip() for b in barangay_filter.split(',') if b.strip()]
-        if barangays:
-            df_filtered = df_filtered[df_filtered['BARANGAY'].isin(barangays)].copy()
-
-    safe_center_lat = df["LATITUDE"].astype(float).mean(); safe_center_lon = df["LONGITUDE"].astype(float).mean()
+    # Redundant barangay and date filtering is now REMOVED from this section.
+    
+    safe_center_lat = df_filtered["LATITUDE"].astype(float).mean(); safe_center_lon = df_filtered["LONGITUDE"].astype(float).mean()
     if pd.isna(safe_center_lat) or pd.isna(safe_center_lon): safe_center_lat, safe_center_lon = DEFAULT_LOCATION
 
     if df_filtered.empty:
@@ -333,6 +316,7 @@ def build_forecast_map_html(
 
     y_final = ts_data_for_forecast['accident_count']
     X_final = ts_data_for_forecast.drop(columns=['accident_count','DATE_COMMITTED'])
+    X_final['ACCIDENT_HOTSPOT'] = X_final['ACCIDENT_HOTSPOT'].astype(int)
     final_model = XGBRegressor(objective='count:poisson', n_estimators=1000, learning_rate=0.01, max_depth=4, random_state=42)
     final_model.fit(X_final, y_final, verbose=False)
 
@@ -356,7 +340,9 @@ def build_forecast_map_html(
         
         preds_accum = []
         for i in range(months_to_forecast):
+            
             current_X = current_features_df[feature_names]
+            current_X['ACCIDENT_HOTSPOT'] = current_X['ACCIDENT_HOTSPOT'].astype(int)
             preds = final_model.predict(current_X)
             
             next_month = last_known_month + pd.DateOffset(months=i+1)
@@ -377,10 +363,31 @@ def build_forecast_map_html(
     else: future_summary = pd.DataFrame(columns=['ACCIDENT_HOTSPOT','Total_Forecasted_Accidents'])
     
     barangay_counts = (df_filtered.groupby(['ACCIDENT_HOTSPOT','BARANGAY']).size().to_frame('count').reset_index())
-    top_barangays = (barangay_counts.sort_values('count', ascending=False).groupby('ACCIDENT_HOTSPOT')['BARANGAY'].apply(lambda s: list(s.head(3))).to_frame(name='Top_Barangays').reset_index())
-    centroids = (df_filtered.groupby('ACCIDENT_HOTSPOT').agg(Center_Lat=('LATITUDE','mean'), Center_Lon=('LONGITUDE','mean')).reset_index())
     
-    final_map_data = (pd.DataFrame({'ACCIDENT_HOTSPOT': df_filtered['ACCIDENT_HOTSPOT'].unique()}).merge(hist_summary, on='ACCIDENT_HOTSPOT', how='left').merge(future_summary, on='ACCIDENT_HOTSPOT', how='left').merge(centroids, on='ACCIDENT_HOTSPOT', how='left').merge(top_barangays, on='ACCIDENT_HOTSPOT', how='left'))
+    # --- START OF MODIFICATION ---
+    # 1. Create a formatted HTML list for ALL barangays in each hotspot
+    def format_barangay_list(group):
+        # Get unique barangay names and sort them alphabetically
+        unique_barangays = sorted(group['BARANGAY'].unique())
+        items = [f"<li>{name}</li>" for name in unique_barangays]
+        # Return a single HTML string, adding a scrollbar if the list is long
+        return '<ul style="margin: 5px 0 0 15px; padding: 0; max-height: 150px; overflow-y: auto;">' + "".join(items) + "</ul>"
+
+    barangay_html_lists = (barangay_counts.groupby('ACCIDENT_HOTSPOT')
+                                        .apply(format_barangay_list)
+                                        .to_frame(name='Barangay_HTML')
+                                        .reset_index())
+
+    centroids = (df_filtered.groupby('ACCIDENT_HOTSPOT').agg(Center_Lat=('LATITUDE','mean'), Center_Lon=('LONGITUDE','mean')).reset_index())
+
+    # 2. Merge this new DataFrame instead of the old 'top_barangays' one
+    final_map_data = (pd.DataFrame({'ACCIDENT_HOTSPOT': df_filtered['ACCIDENT_HOTSPOT'].unique()})
+        .merge(hist_summary, on='ACCIDENT_HOTSPOT', how='left')
+        .merge(future_summary, on='ACCIDENT_HOTSPOT', how='left')
+        .merge(centroids, on='ACCIDENT_HOTSPOT', how='left')
+        .merge(barangay_html_lists, on='ACCIDENT_HOTSPOT', how='left')) # <-- This merge is changed
+    # --- END OF MODIFICATION ---
+
     final_map_data[['Total_Actual_Accidents','Total_Forecasted_Accidents']] = final_map_data[['Total_Actual_Accidents','Total_Forecasted_Accidents']].fillna(0).astype(float)
     final_map_data['Total_Events'] = final_map_data['Total_Actual_Accidents'] + final_map_data['Total_Forecasted_Accidents']
     
@@ -419,8 +426,10 @@ def build_forecast_map_html(
         if pd.isna(row['Center_Lat']) or pd.isna(row['Center_Lon']): 
             continue
         lat, lng = float(row['Center_Lat']), float(row['Center_Lon'])
-        top3 = row.get('Top_Barangays', None)
-        barangay_str = ', '.join(top3) if isinstance(top3, list) else 'N/A'
+
+        # --- START OF MODIFICATION ---
+        # 3. Use the pre-formatted HTML string directly in the popup
+        barangay_html = row.get('Barangay_HTML', '<p style="margin: 5px 0;">N/A</p>') # Get the HTML, with a fallback
         streetview_url = f"https://www.google.com/maps?q=&layer=c&cbll={lat},{lng}&cbp=12,90,0,0,5"
         popup_html = f"""
         <div style="font-family: 'Chillax', sans-serif; font-weight: 400; max-width: 250px; color: #1e1e1e;">
@@ -428,14 +437,17 @@ def build_forecast_map_html(
                 Hotspot #{int(row['ACCIDENT_HOTSPOT'])}
             </h4>
             <p style="margin: 5px 0;"><strong>Time:</strong> {display_hour_str}</p>
-            <p style="margin: 5px 0;"><strong>Top Barangays:</strong> {barangay_str}</p>
+            <p style="margin: 5px 0;"><strong>Barangays in Hotspot:</strong></p>
+            {barangay_html}
             <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-            {f"<p style='margin: 5px 0;'><strong>Actual (Hist.):</strong> {row['Total_Actual_Accidents']:.2f}</p>" if row['Total_Actual_Accidents'] > 0 else ""}
+            {f"<p style='margin: 5px 0;'><strong>Actual (Hist.):</strong> {int(row['Total_Actual_Accidents'])}</p>" if row['Total_Actual_Accidents'] > 0 else ""}
             {f"<p style='margin: 5px 0;'><strong>Forecasted:</strong> {row['Total_Forecasted_Accidents']:.2f}</p>" if row['Total_Forecasted_Accidents'] > 0 else ""}
             <a href="{streetview_url}" target="_blank" style="display: inline-block; width: 100%; box-sizing: border-box; text-align: center; margin-top: 10px; padding: 8px 12px; background-color: #0437F2; color: white; text-decoration: none; border-radius: 5px; font-weight: 700; font-family: 'Chillax', sans-serif;">
                 Open Street View
             </a>
         </div>"""
+        # --- END OF MODIFICATION ---
+
         color = color_for(float(row['Total_Events']))
         radius = 5 + (np.log1p(float(row['Total_Events'])) * 5)
         folium.CircleMarker(

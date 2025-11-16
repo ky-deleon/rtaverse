@@ -100,6 +100,7 @@ def database_page():
         "DATE_COMMITTED",
         "TIME_COMMITTED",
         "DAY_OF_WEEK",
+        "SEASON_CLUSTER",     # <-- ADDED
         "OFFENSE",
         "LATITUDE",
         "LONGITUDE",
