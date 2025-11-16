@@ -14,8 +14,8 @@
   grid-column: span 2;
 }
 
-.card>div[id] {
-  overflow-y: auto;
+.card > div[id] {
+  overflow: auto;
   max-height: 400px;
 }
 
@@ -130,11 +130,11 @@
   border-radius: 50%;
 }
 
-input:checked+.slider {
+input:checked + .slider {
   background-color: #0437f2;
 }
 
-input:checked+.slider:before {
+input:checked + .slider:before {
   transform: translateX(22px);
 }
 
@@ -380,10 +380,9 @@ input:checked+.slider:before {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex-basis: 200px;
+  flex-basis: 140px; /* <-- Change this value */
   flex-grow: 1;
 }
-
 .checkbox-group-wrapper label,
 .checkbox-row label {
   font-size: 14px;

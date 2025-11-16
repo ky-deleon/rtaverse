@@ -51,6 +51,7 @@ main p {
   gap: 6px;
   position: relative;
   transition: transform 0.2s ease;
+  overflow: auto;
 }
 .card:hover {
   transform: translateY(-2px);
