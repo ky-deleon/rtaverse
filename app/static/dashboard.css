@@ -101,3 +101,49 @@
 /* ======================================== */
 /* === END: Added Loader Styles         === */
 /* ======================================== */
+
+/*
+  ========================================
+  === START: Tooltip Clipping Fix      ===
+  ========================================
+*/
+
+/* 1. Allow the grid container to show content
+     that "overflows" its boundaries.
+*/
+.cards-grid {
+  overflow: visible;
+  /* This ensures the grid itself doesn't cut off the tooltip */
+}
+
+/* 2. Specifically target the legend card (which uses col-span-2)
+     and allow it to show overflowing content.
+     This is the main fix for the clipping.
+*/
+.card.col-span-2 {
+  overflow: visible;
+}
+
+/* 3. Make the legend item the "anchor" for the
+     tooltip. This is necessary for the z-index to
+     work correctly.
+*/
+.legend-item {
+  position: relative;
+}
+
+/* 4. Ensure the tooltip box has a very high
+     z-index, so it appears "on top" of all
+     other elements on the page (like the map).
+*/
+.tooltip-box {
+  position: absolute; /* Assuming it's absolutely positioned */
+  z-index: 9999;
+  /* A high z-index ensures it's on top of the map and other UI */
+}
+
+/*
+  ========================================
+  === END: Tooltip Clipping Fix        ===
+  ========================================
+*/

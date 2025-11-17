@@ -145,6 +145,13 @@
                 </div>
               </div>
 
+              <button
+                id="addRecordBtn"
+                class="edit-table-btn"
+                style="background-color: #28a745"
+              >
+                Add Record
+              </button>
               <button id="editTableBtn" class="edit-table-btn">
                 Edit Table
               </button>
@@ -428,6 +435,260 @@
         <div class="modal-buttons">
           <button onclick="confirmLogout()">Yes</button>
           <button onclick="closeLogoutModal()">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="addRecordModal" class="filter-modal hidden">
+      <div class="filter-modal-content" style="width: 640px; max-width: 90vw">
+        <button class="filter-close-btn" onclick="closeAddRecordModal()">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6B7280"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <h2
+          class="zoom-modal-title"
+          style="
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+          "
+        >
+          Add New Record
+        </h2>
+
+        <form id="addRecordForm">
+          <div class="filter-grid">
+            <h3 class="form-subheading grid-span-2">Incident Details</h3>
+
+            <div class="filter-group grid-span-2">
+              <label for="addOffense" class="filter-label">Offense</label>
+              <div class="filter-dropdown">
+                <input
+                  type="text"
+                  id="addOffense"
+                  class="filter-select"
+                  placeholder="Select or search offense"
+                  autocomplete="off"
+                  required
+                />
+                <svg
+                  class="dropdown-arrow"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6B7280"
+                  stroke-width="2"
+                >
+                  <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+                <div id="addOffenseDropdownList" class="dropdown-list"></div>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label for="addDate" class="filter-label">Date Committed</label>
+              <input
+                type="date"
+                id="addDate"
+                class="filter-date-input"
+                placeholder="YYYY-MM-DD"
+                required
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addTime" class="filter-label">Time Committed</label>
+              <input
+                type="time"
+                id="addTime"
+                class="filter-date-input"
+                placeholder="HH:MM"
+                required
+              />
+            </div>
+
+            <h3 class="form-subheading grid-span-2">Location Details</h3>
+
+            <div class="filter-group">
+              <label for="addStation" class="filter-label">Station</label>
+              <input
+                type="number"
+                id="addStation"
+                class="filter-select"
+                min="1"
+                max="6"
+                placeholder="e.g., 4"
+                required
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addBarangay" class="filter-label">Barangay</label>
+              <div class="filter-dropdown">
+                <input
+                  type="text"
+                  id="addBarangay"
+                  class="filter-select"
+                  placeholder="Select or search barangay"
+                  autocomplete="off"
+                  required
+                />
+                <svg
+                  class="dropdown-arrow"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6B7280"
+                  stroke-width="2"
+                >
+                  <polyline
+                    points="6,9 
+ 12,15 18,9"
+                  ></polyline>
+                </svg>
+                <div id="addBarangayDropdownList" class="dropdown-list"></div>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label for="addLatitude" class="filter-label">Latitude</label>
+
+              <input
+                type="number"
+                step="any"
+                id="addLatitude"
+                class="filter-select"
+                placeholder="e.g., 15.1685"
+                required
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addLongitude" class="filter-label">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                id="addLongitude"
+                class="filter-select"
+                placeholder="e.g., 120.596"
+                required
+              />
+            </div>
+
+            <h3 class="form-subheading grid-span-2">Parties Involved</h3>
+
+            <div class="filter-group">
+              <label for="addVictimCount" class="filter-label"
+                >Victim Count</label
+              >
+              <input
+                type="number"
+                id="addVictimCount"
+                class="filter-select"
+                value="1"
+                min="0"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addSuspectCount" class="filter-label"
+                >Suspect Count</label
+              >
+              <input
+                type="number"
+                id="addSuspectCount"
+                class="filter-select"
+                value="1"
+                min="0"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addAge" class="filter-label"
+                >Primary Victim Age</label
+              >
+              <input
+                type="number"
+                id="addAge"
+                class="filter-select"
+                placeholder="e.g., 25"
+                min="0"
+              />
+            </div>
+
+            <div class="filter-group">
+              <label for="addGender" class="filter-label"
+                >Primary Victim Gender</label
+              >
+              <div class="filter-dropdown">
+                <input
+                  type="text"
+                  id="addGender"
+                  class="filter-select"
+                  placeholder="Select or search gender"
+                  autocomplete="off"
+                />
+                <svg
+                  class="dropdown-arrow"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6B7280"
+                  stroke-width="2"
+                >
+                  <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+                <div id="addGenderDropdownList" class="dropdown-list"></div>
+              </div>
+            </div>
+
+            <div class="filter-group grid-span-2">
+              <label for="addAlcohol" class="filter-label"
+                >Alcohol Involved (Suspect)</label
+              >
+              <div class="filter-dropdown">
+                <input
+                  type="text"
+                  id="addAlcohol"
+                  class="filter-select"
+                  placeholder="Select or search status"
+                  autocomplete="off"
+                />
+                <svg
+                  class="dropdown-arrow"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6B7280"
+                  stroke-width="2"
+                >
+                  <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+                <div id="addAlcoholDropdownList" class="dropdown-list"></div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="filter-actions">
+          <button class="filter-clear-btn" onclick="closeAddRecordModal()">
+            Cancel
+          </button>
+          <button class="filter-apply-btn" id="submitAddRecord">Submit</button>
         </div>
       </div>
     </div>

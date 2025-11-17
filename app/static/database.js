@@ -24,6 +24,20 @@ if ($("#uploadedTable").length > 0) {
 }
 
 const DISPLAY_RENDER_MAP = {
+  // --- START: Added TIME_COMMITTED Formatter ---
+  TIME_COMMITTED: (v) => {
+    // This will format "1:34:00" or "13:34:00" to "01:34" or "13:34"
+    if (typeof v !== "string") return v;
+    const parts = v.split(":");
+    if (parts.length >= 2) {
+      const hour = parts[0].padStart(2, "0");
+      const minute = parts[1];
+      return `${hour}:${minute}`;
+    }
+    return v; // Fallback for unexpected formats
+  },
+  // --- END: Added TIME_COMMITTED Formatter ---
+
   // One-hot → labels
   GENDER_Male: (v) => (v === "1" || v === 1 ? "Male" : ""),
   GENDER_Unknown: (v) => (v === "1" || v === 1 ? "Unknown" : ""),
@@ -141,6 +155,238 @@ $(document).on("change", "#select-all", function () {
 
 $(document).ready(function () {
   console.log("Document ready, looking for table...");
+
+  // --- Add Record Modal Functions ---
+
+  /**
+   * Initializes a searchable dropdown within the Add Record modal.
+   * @param {string} inputId The ID of the <input> element.
+   * @param {string} dropdownListId The ID of the <div> dropdown list.
+   * @param {string[]} optionsArray The array of string options.
+   */
+  function initializeAddRecordDropdown(inputId, dropdownListId, optionsArray) {
+    const targetInput = document.getElementById(inputId);
+    const dropdownList = document.getElementById(dropdownListId);
+    if (!targetInput || !dropdownList) return;
+
+    function showDropdown(list) {
+      dropdownList.innerHTML = list.length
+        ? list.map((opt) => `<div class="dropdown-item">${opt}</div>`).join("")
+        : `<div class="dropdown-item no-results">No options found</div>`;
+      dropdownList.style.display = "block";
+    }
+
+    // Use .off() to prevent duplicate listeners if modal is reopened
+    $(targetInput)
+      .off("focus")
+      .on("focus", () => showDropdown(optionsArray));
+
+    $(targetInput)
+      .off("input")
+      .on("input", function () {
+        const searchTerm = this.value.toLowerCase();
+        const filtered = optionsArray.filter((opt) =>
+          opt.toLowerCase().includes(searchTerm)
+        );
+        showDropdown(filtered);
+      });
+
+    $(dropdownList)
+      .off("click")
+      .on("click", function (e) {
+        if (
+          e.target.classList.contains("dropdown-item") &&
+          !e.target.classList.contains("no-results")
+        ) {
+          targetInput.value = e.target.textContent;
+          dropdownList.style.display = "none";
+        }
+      });
+
+    // Hide dropdown when clicking outside of it
+    $(document)
+      .off(`click.hide_${inputId}`)
+      .on(`click.hide_${inputId}`, function (e) {
+        if (
+          targetInput.parentElement && // Check if parentElement exists
+          !targetInput.parentElement.contains(e.target) &&
+          dropdownList.style.display === "block"
+        ) {
+          dropdownList.style.display = "none";
+        }
+      });
+  }
+
+  function openAddRecordModal() {
+    // Only open if a table is loaded
+    if ($("#uploadedTable").length > 0) {
+      document.getElementById("addRecordModal").classList.remove("hidden");
+
+      // Initialize the static dropdowns
+      initializeAddRecordDropdown("addGender", "addGenderDropdownList", [
+        "Male",
+        "Female",
+        "Unknown",
+      ]);
+      initializeAddRecordDropdown("addAlcohol", "addAlcoholDropdownList", [
+        "Yes",
+        "No",
+        "Unknown",
+      ]);
+      initializeAddRecordDropdown("addOffense", "addOffenseDropdownList", [
+        "Property_and_Person",
+        "Person_Injury_Only",
+        "Property_Damage_Only",
+      ]);
+
+      // Fetch and initialize the dynamic Barangay dropdown
+      fetch("/api/barangays")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.barangays) {
+            initializeAddRecordDropdown(
+              "addBarangay",
+              "addBarangayDropdownList",
+              data.barangays
+            );
+          }
+        })
+        .catch((err) => console.error("Failed to fetch barangays:", err));
+    } else {
+      alert("Please select a file to view a table before adding a record.");
+    }
+  }
+
+  function closeAddRecordModal() {
+    document.getElementById("addRecordModal").classList.add("hidden");
+    document.getElementById("addRecordForm").reset(); // Clear standard form elements
+
+    // Manually clear the values of the new text-based dropdown inputs
+    $("#addGender").val("");
+    $("#addAlcohol").val("");
+    $("#addOffense").val("");
+    $("#addBarangay").val("");
+  }
+
+  // Attach click handler for the new button
+  $(document).on("click", "#addRecordBtn", openAddRecordModal);
+
+  // Attach submit handler for the modal form
+  $(document).on("click", "#submitAddRecord", function (e) {
+    e.preventDefault(); // Stop default form submission
+
+    // --- START: Added Offense Mapping ---
+    // This map converts the user-friendly text back to the numerical ID for storage
+    const offenseMap = {
+      Property_Damage_Only: "1",
+      Property_and_Person: "2",
+      Person_Injury_Only: "3",
+    };
+    const offenseText = $("#addOffense").val();
+    // --- END: Added Offense Mapping ---
+
+    // 1. Gather form data
+    const recordData = {
+      STATION: $("#addStation").val(),
+      BARANGAY: $("#addBarangay").val(),
+      DATE_COMMITTED: $("#addDate").val(),
+      TIME_COMMITTED: $("#addTime").val(), // This will be in 'HH:MM' format
+      // Use the map to send the numerical ID, or the raw text as a fallback
+      OFFENSE: offenseMap[offenseText] || offenseText,
+      LATITUDE: parseFloat($("#addLatitude").val()),
+      LONGITUDE: parseFloat($("#addLongitude").val()),
+      "VICTIM COUNT": parseInt($("#addVictimCount").val()),
+      "SUSPECT COUNT": parseInt($("#addSuspectCount").val()),
+      AGE: $("#addAge").val() ? parseInt($("#addAge").val()) : null,
+      GENDER: $("#addGender").val(),
+      ALCOHOL_USED: $("#addAlcohol").val(),
+    };
+
+    // 2. Get current table name
+    const currentTable = new URLSearchParams(window.location.search).get(
+      "table"
+    );
+
+    // 3. Simple validation
+    if (!currentTable) {
+      alert("Error: Could not determine the current table name.");
+      return;
+    }
+    if (
+      !recordData.STATION ||
+      !recordData.BARANGAY ||
+      !recordData.DATE_COMMITTED ||
+      !recordData.TIME_COMMITTED ||
+      isNaN(recordData.LATITUDE) ||
+      isNaN(recordData.LONGITUDE)
+    ) {
+      alert(
+        "Please fill in all required fields (Station, Barangay, Date, Time, Latitude, Longitude)."
+      );
+      return;
+    }
+
+    const btn = $(this);
+    btn.prop("disabled", true).text("Submitting...");
+
+    // 4. Send to the new backend endpoint
+    fetch("/api/add_record", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        table_name: currentTable,
+        record: recordData,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          alert(data.message);
+          closeAddRecordModal();
+
+          // 5. Add the new row to the DataTable
+          if (dataTable && data.new_record) {
+            // The backend returns a dict. We must convert it to an array
+            // in the exact order of the table's columns.
+
+            const dtHeaders = dataTable
+              .columns()
+              .header()
+              .map((th) => $(th).text().trim())
+              .toArray();
+            const newRowObject = data.new_record; // e.g., {id: 123, STATION: '4', ...}
+
+            const newRowAsArray = dtHeaders.map((header) => {
+              if (header === "" || header === "Actions") {
+                return ""; // Placeholder for 'Select' and 'Actions' columns
+              }
+              // Use the value from the returned object, or "" if it doesn't exist
+              return newRowObject[header] !== undefined &&
+                newRowObject[header] !== null
+                ? newRowObject[header]
+                : "";
+            });
+
+            dataTable.row.add(newRowAsArray).draw(false); // Add row and draw
+          } else {
+            // Fallback if data isn't returned, just reload
+            location.reload();
+          }
+        } else {
+          alert("Error: " + data.message);
+        }
+      })
+      .catch((err) => {
+        console.error("Add record error:", err);
+        alert("An error occurred: " + err.message);
+      })
+      .finally(() => {
+        btn.prop("disabled", false).text("Submit");
+      });
+  });
 
   if ($(".file-selection-container").length > 0) {
     $(".breadcrumbs").show();
@@ -716,26 +962,6 @@ $(document).ready(function () {
 
       // --- NEW: Clean up the visual indicators ---
       $("#uploadedTable td").removeClass("is-readonly");
-
-      undoStack = [];
-      redoStack = [];
-      hasUnsavedChanges = false;
-    });
-    $("#cancelEditBtn").on("click", function () {
-      if (hasUnsavedChanges) {
-        let confirmExit = confirm(
-          "You have unsaved changes. If you cancel, they will be lost. Continue?"
-        );
-        if (!confirmExit) return;
-      }
-
-      // Restore original data so nothing changes
-      restoreOriginalData();
-
-      isEditing = false;
-      $("#saveTableBtn, #cancelEditBtn, #undoBtn, #redoBtn").hide();
-      $("#editTableBtn, #deleteSelectedBtn, #mergeFileBtn, #uploadForm").show();
-      $("#uploadedTable").off("click.editMode");
 
       undoStack = [];
       redoStack = [];
@@ -1793,3 +2019,8 @@ document.getElementById("pbActionBtn")?.addEventListener("click", () => {
   closeProgressModal();
   window.location.reload();
 });
+
+function closeAddRecordModal() {
+  document.getElementById("addRecordModal").classList.add("hidden");
+  document.getElementById("addRecordForm").reset(); // Clear the form
+}

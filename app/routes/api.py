@@ -11,9 +11,11 @@ import numpy as np
 import io
 import folium
 from mysql.connector.errors import ProgrammingError
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import text
+# In api.py, add these to your existing imports
+from ..services.preprocessing import apply_additional_preprocessing
 
 try:
     from fpdf import FPDF
@@ -22,6 +24,143 @@ except ImportError:
 
 api_bp = Blueprint("api", __name__)
 
+# ==== START: NEW ROUTE FOR ADDING A SINGLE RECORD ====
+@api_bp.route("/add_record", methods=["POST"])
+def add_record():
+    if not is_logged_in():
+        return jsonify({"success": False, "message": "Not authorized"}), 401
+
+    data = request.get_json()
+    table_name = data.get('table_name')
+    record = data.get('record') # This is a dictionary of the new record
+
+    if not table_name or not record:
+        return jsonify({"success": False, "message": "Table name and record data are required"}), 400
+
+    conn = None
+    cur = None
+    try:
+        # 1. Convert the single record (dict) into a one-row DataFrame
+        # This is necessary to run it through your existing preprocessing pipeline
+        df = pd.DataFrame([record], index=[0])
+
+        # 2. Run the same preprocessing pipeline as your file uploads
+        # This will create all the derived columns (MONTH_SIN, GENDER_CLUSTER, etc.)
+        processed_df = apply_additional_preprocessing(df)
+
+        offense_val = None
+        if 'OFFENSE' in df.columns:
+            offense_val = df.pop('OFFENSE').iloc[0] # Get "1" and remove column
+        
+        # 2. Run the same preprocessing pipeline as your file uploads
+        # This will create all the derived columns (MONTH_SIN, GENDER_CLUSTER, etc.)
+        processed_df = apply_additional_preprocessing(df)
+        
+        # Add the 'OFFENSE' value back to the processed dataframe
+        if offense_val is not None:
+            processed_df['OFFENSE'] = offense_val
+        # --- END OF FIX ---
+        
+        # --- START: Logic to add DAY_OF_WEEK, YEAR, MONTH, DAY ---
+        try:
+            # Get the date string from the processed dataframe
+            date_str = processed_df.at[0, 'DATE_COMMITTED']
+            # Convert string to datetime object
+            dt = datetime.strptime(date_str, '%Y-%m-%d')
+            
+            # Add the new columns to the processed DataFrame
+            # The database table has a column named "WEEKDAY", not "DAY_OF_WEEK"
+            processed_df['WEEKDAY'] = dt.strftime('%A') # e.g., "Tuesday"
+            processed_df['YEAR'] = dt.year
+            processed_df['MONTH'] = dt.month
+            processed_df['DAY'] = dt.day
+            
+        except Exception as e:
+            print(f"Could not derive date components: {e}")
+            processed_df['WEEKDAY'] = None # Add column as None if derivation fails
+            processed_df['YEAR'] = None
+            processed_df['MONTH'] = None
+            processed_df['DAY'] = None
+        # --- END: Updated logic ---
+
+
+
+        # 3. Save the processed row to the database
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Get the final list of columns in the database
+        cur.execute(f"SHOW COLUMNS FROM `{table_name}`")
+        db_cols = [r[0] for r in cur.fetchall()]
+
+        # Prepare the final row for insertion
+        final_row_data = {}
+        for col in db_cols:
+            if col.lower() == 'id':
+                continue # Skip auto-increment ID
+            if col in processed_df.columns:
+                # Get value, convert numpy/pandas types to standard python types
+                val = processed_df.iloc[0][col]
+                if pd.isna(val) or val is pd.NA:
+                    final_row_data[col] = None
+                elif isinstance(val, (np.integer, np.int64)):
+                    final_row_data[col] = int(val)
+                elif isinstance(val, (np.floating, np.float64)):
+                    final_row_data[col] = float(val)
+                else:
+                    final_row_data[col] = str(val)
+            else:
+                # This handles columns in the DB that weren't in the form
+                final_row_data[col] = None 
+
+        cols_to_insert = final_row_data.keys()
+        placeholders = ", ".join(["%s"] * len(cols_to_insert))
+        values = tuple(final_row_data.values())
+
+        insert_sql = f"INSERT INTO `{table_name}` ({', '.join(f'`{c}`' for c in cols_to_insert)}) VALUES ({placeholders})"
+
+        cur.execute(insert_sql, values)
+        new_id = cur.lastrowid # Get the new auto-incremented ID
+        conn.commit()
+
+        # 5. Fetch the newly inserted row to return to the frontend
+        # This ensures the frontend gets all processed data AND the new ID
+        # We use dictionary=True to get a {col: val} dict
+        cur.close()
+        cur = conn.cursor(dictionary=True)
+        cur.execute(f"SELECT * FROM `{table_name}` WHERE `id` = %s", (new_id,))
+        new_row_dict = cur.fetchone()
+        
+        if not new_row_dict:
+            raise Exception("Failed to retrieve the newly added record.")
+
+        # Convert date/time/timedelta objects to strings for JSON
+        for key, val in new_row_dict.items():
+            if isinstance(val, (date, time, timedelta)):
+                new_row_dict[key] = str(val)
+
+        # --- START OF FIX ---
+        # The frontend table header is "DAY_OF_WEEK", but the DB column is "WEEKDAY".
+        # We must create the "DAY_OF_WEEK" key in the returned object
+        # so the frontend JavaScript can find and display it.
+        if 'WEEKDAY' in new_row_dict:
+            new_row_dict['DAY_OF_WEEK'] = new_row_dict['WEEKDAY']
+        # --- END OF FIX ---
+
+        return jsonify({"success": True, "message": "Record added successfully!", "new_record": new_row_dict})
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"success": False, "message": f"An error occurred: {str(e)}"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn and conn.is_connected():
+            conn.close()
+# ==== END: NEW ROUTE FOR ADDING A SINGLE RECORD ====
 
 def build_filter_query(cols, req_obj=None):
     q = (req_obj or request).args
