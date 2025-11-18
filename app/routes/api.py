@@ -163,7 +163,8 @@ def add_record():
 # ==== END: NEW ROUTE FOR ADDING A SINGLE RECORD ====
 
 def build_filter_query(cols, req_obj=None):
-    q = (req_obj or request).args
+    # If req_obj is not provided, default to the global request object
+    q = req_obj if req_obj is not None else request.args
     where = []
     params = {}
 
@@ -252,11 +253,9 @@ def build_filter_query(cols, req_obj=None):
                 params[f"offense_{i}"] = offense_val
             where.append(f"`{offense_col}` IN ({', '.join(offense_placeholders)})")
 
-    # --- START OF NEW CODE ---
     # Season Filter
     season_raw = [s.strip().capitalize() for s in (q.get("season") or "").split(",") if s.strip()]
     if season_raw:
-        # Prioritize the reconstructed cluster column for filtering
         cat_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
         onehot_any = any(f"SEASON_CLUSTER_{v}" in cols for v in ["Dry", "Rainy"])
 
@@ -266,14 +265,12 @@ def build_filter_query(cols, req_obj=None):
                 params[f"season_{i}"] = season_val
             where.append(f"`{cat_col}` IN ({', '.join(season_placeholders)})")
         elif onehot_any:
-            # Fallback to one-hot encoded columns if the cluster column isn't there
             pieces = []
             for season_val in season_raw:
                 if f"SEASON_CLUSTER_{season_val}" in cols:
                     pieces.append(f"COALESCE(`SEASON_CLUSTER_{season_val}`, 0) = 1")
             if pieces:
                 where.append(f"({' OR '.join(pieces)})")
-    # --- END OF NEW CODE ---
 
     # Hour Range
     hour_from, hour_to = q.get("hour_from"), q.get("hour_to")
@@ -298,7 +295,6 @@ def build_filter_query(cols, req_obj=None):
     where_sql = " WHERE " + " AND ".join(where) if where else ""
     return where_sql, params
 
-# --- START OF FIX: This entire function is replaced ---
 @api_bp.route("/accidents_by_hour", methods=["GET"])
 def accidents_by_hour():
     if not is_logged_in():
@@ -322,12 +318,9 @@ def accidents_by_hour():
         
         counts_by_hr = {int(hr): int(cnt) for hr, cnt in rows if hr is not None}
 
-        # Robustly get the hour range for the chart's x-axis
         hour_from_str = request.args.get("hour_from")
         hour_to_str = request.args.get("hour_to")
 
-        # If a time filter is active, use that range; otherwise, use the full 24-hour day.
-        # This prevents errors from trying to convert `None` to an integer.
         if hour_from_str is not None and hour_to_str is not None:
             hour_from = int(hour_from_str)
             hour_to = int(hour_to_str)
@@ -520,7 +513,6 @@ def set_forecast_source():
     session['forecast_table'] = table
     return jsonify(success=True, message=f'"{table}" set as forecast source.')
 
-# In api.py
 
 @api_bp.route("/database_data")
 def database_data():
@@ -535,61 +527,46 @@ def database_data():
         if not table_name or table_name not in list_tables():
             return jsonify({"error": "Invalid table specified"}), 400
 
-        # --- DataTables Request Parsing ---
         draw = int(request.args.get('draw', 0))
         start = int(request.args.get('start', 0))
         length = int(request.args.get('length', 10))
         search_value = request.args.get('search[value]', '').strip()
 
-        # Get column names to map sorting index to actual column name
         cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
         db_columns = [row['Field'] for row in cursor.fetchall()]
         
-        # Add a placeholder for the select checkbox column at the start
-        # This aligns the sorting index from the request with your DB columns
         column_map = ['select_col_placeholder'] + db_columns
 
         order_column_index = int(request.args.get('order[0][column]', 0))
         order_dir = request.args.get('order[0][dir]', 'asc').lower()
         order_column_name = column_map[order_column_index] if order_column_index < len(column_map) else db_columns[0]
 
-        # --- Database Query Construction ---
         params = []
         where_clauses = []
 
-        # Global search logic
         if search_value:
             search_likes = []
             for col in db_columns:
-                # Search only in text-like columns for efficiency
                 search_likes.append(f"`{col}` LIKE %s")
             where_clauses.append(f"({' OR '.join(search_likes)})")
-            # Add the search term for each column being searched
             params.extend([f"%{search_value}%"] * len(db_columns))
 
-        # Final query parts
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
         order_sql = f"ORDER BY `{order_column_name}` {order_dir}" if order_column_name in db_columns else ""
         limit_sql = "LIMIT %s OFFSET %s"
         params.extend([length, start])
 
-        # --- Execute Queries ---
-        # Get total records without filtering
         cursor.execute(f"SELECT COUNT(id) as count FROM `{table_name}`")
         records_total = cursor.fetchone()['count']
 
-        # Get total records with filtering
         count_query = f"SELECT COUNT(id) as count FROM `{table_name}` {where_sql}"
-        # Use only the search parameters for the filtered count
         cursor.execute(count_query, params[:-2] if search_value else [])
         records_filtered = cursor.fetchone()['count']
 
-        # Get the paginated and filtered data
         data_query = f"SELECT * FROM `{table_name}` {where_sql} {order_sql} {limit_sql}"
         cursor.execute(data_query, tuple(params))
         data = cursor.fetchall()
 
-        # Convert all values to strings for robust rendering
         data_as_lists = []
         for row_dict in data:
             data_as_lists.append([str(row_dict.get(col, '')) for col in db_columns])
@@ -610,12 +587,8 @@ def database_data():
             cursor.close()
             conn.close()
             
-# ADD THE NEW ROUTE AND FUNCTION BELOW
 @api_bp.route("/export_table")
 def export_table():
-    """
-    Exports data from a specified table to CSV, Excel, or PDF format.
-    """
     if not is_logged_in():
         return jsonify({"success": False, "message": "Not authorized"}), 401
 
@@ -628,7 +601,6 @@ def export_table():
     if table_name not in list_tables():
         return jsonify({"success": False, "message": f"Table '{table_name}' not found."}), 404
 
-    # Define the specific columns to be included in the export
     COLUMNS_TO_EXPORT = [
         "STATION", "BARANGAY", "DATE_COMMITTED", "TIME_COMMITTED", "DAY_OF_WEEK",
         "OFFENSE", "LATITUDE", "LONGITUDE", "ACCIDENT_HOTSPOT", "VICTIM COUNT",
@@ -639,14 +611,11 @@ def export_table():
         engine = get_engine()
         df_full = pd.read_sql_table(table_name, engine)
 
-        # Generate derived columns (like DAY_OF_WEEK, etc.)
         df_display = make_display_copy(df_full)
 
-        # Filter the DataFrame to only include existing columns from our export list
         final_columns = [col for col in COLUMNS_TO_EXPORT if col in df_display.columns]
         df_export = df_display[final_columns]
 
-        # Sanitize the table name for use as a filename
         safe_filename = "".join(c for c in table_name if c.isalnum() or c in (' ', '_')).rstrip()
 
         if export_format == 'csv':
@@ -659,7 +628,6 @@ def export_table():
 
         elif export_format == 'excel':
             output = io.BytesIO()
-            # Use xlsxwriter engine for modern .xlsx format
             df_export.to_excel(output, index=False, sheet_name='Data', engine='xlsxwriter')
             output.seek(0)
             return Response(
@@ -672,7 +640,7 @@ def export_table():
             if FPDF is None:
                 raise ImportError("FPDF (fpdf2) is not installed. Cannot generate PDF.")
             
-            pdf = FPDF(orientation='L', unit='mm', format='A4') # Landscape
+            pdf = FPDF(orientation='L', unit='mm', format='A4')
             pdf.add_page()
             pdf.set_font("Arial", size=7)
 
@@ -680,20 +648,17 @@ def export_table():
             num_columns = len(df_export.columns)
             col_width = page_width / num_columns if num_columns > 0 else page_width
 
-            # Table Header
             pdf.set_font('Arial', 'B', 7)
             for col_name in df_export.columns:
                 pdf.cell(col_width, 8, str(col_name), border=1, align='C')
             pdf.ln()
             pdf.set_font('Arial', '', 7)
 
-            # Table Rows
             for _, row in df_export.iterrows():
                 for item in row:
                     pdf.cell(col_width, 8, str(item), border=1)
                 pdf.ln()
 
-            # The output must be encoded for the Response object
             pdf_output = pdf.output(dest='S').encode('latin-1')
             return Response(
                 pdf_output,
@@ -762,7 +727,6 @@ def overall_timeseries():
 
         where_sql, params = build_filter_query(cols)
 
-        # Use pandas to easily resample the data by month
         sql = f"SELECT DATE_COMMITTED FROM `{table}` {where_sql}"
         df = pd.read_sql_query(sql, conn, params=params, parse_dates=["DATE_COMMITTED"])
         conn.close()
@@ -770,10 +734,8 @@ def overall_timeseries():
         if df.empty:
             return jsonify(success=True, data={"dates": [], "counts": []})
 
-        # Resample to get monthly counts
         ts = df.set_index('DATE_COMMITTED').resample('ME').size().to_frame('count')
 
-        # Format for JSON response
         data = {
             "dates": ts.index.strftime('%Y-%m-%d').tolist(),
             "counts": ts['count'].astype(int).tolist()
@@ -785,13 +747,6 @@ def overall_timeseries():
         import traceback
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
 
-
-
-import traceback
-
-
-# In api.py
-
 @api_bp.route("/folium_map")
 def folium_map():
     if not is_logged_in():
@@ -802,28 +757,40 @@ def folium_map():
         return Response(f"<h4>Error: Table '{table}' not found.</h4>", mimetype='text/html')
 
     try:
-        conn = get_engine().connect()
-        # --- START OF FIX ---
-        # Get all column names to build the filter query
-        result = conn.execute(text(f"SHOW COLUMNS FROM `{table}`"))
-        cols = {str(row[0]) for row in result.fetchall()}
-        conn.close()
-
-        # Build the WHERE clause and parameters from the request arguments
-        where_sql, params = build_filter_query(cols, req_obj=request)
-        # --- END OF FIX ---
-        
         q = request.args
+        now = datetime.now()
+
+        # 1. Get parameters, providing defaults for the current month and hour if they are missing.
+        # This makes the map load with a relevant initial view.
+        start_str = q.get("start") or now.strftime('%Y-%m')
+        end_str = q.get("end") or now.strftime('%Y-%m')
+        time_from_str = q.get("time_from") or str(now.hour)
+        time_to_str = q.get("time_to") or str(now.hour)
+
+        # 2. For the model training query, we use all filters *except* the date range.
+        # This ensures the model is trained on all relevant historical data.
+        training_filters = q.copy()
+        training_filters.pop("start", None)
+        training_filters.pop("end", None)
+
+        engine = get_engine()
+        with engine.connect() as conn:
+            result = conn.execute(text(f"SHOW COLUMNS FROM `{table}`"))
+            cols = {str(row[0]) for row in result.fetchall()}
+
+        # 3. Build the WHERE clause for training data using the non-date filters.
+        where_sql, params = build_filter_query(cols, req_obj=training_filters)
         
-        # Pass all filter parameters, INCLUDING the new where_sql and params
+        # 4. Call the map builder. Pass the training query, but also pass the original (or defaulted)
+        # date and time strings so the forecast period and display are correct.
         html = build_forecast_map_html(
             table=table,
-            where_sql=where_sql, # Pass the generated SQL
-            params=params,       # Pass the parameters for the query
-            start_str=q.get("start"),
-            end_str=q.get("end"),
-            time_from=q.get("time_from"),
-            time_to=q.get("time_to"),
+            where_sql=where_sql, 
+            params=params,       
+            start_str=start_str,
+            end_str=end_str,
+            time_from=time_from_str,
+            time_to=time_to_str,
             legacy_time=q.get("legacy_time", "Live"),
             barangay_filter=q.get("barangay")
         )
@@ -853,10 +820,7 @@ def upload_files():
         print("--- FILE UPLOAD ERROR ---")
         traceback.print_exc()
         print("-------------------------")
-        # Return a more helpful error message to the user
         return jsonify(success=False, message=f"An internal error occurred during processing: {e}"), 500
-
-# --- Add this new route to api.py ---
 
 @api_bp.route("/update_rows", methods=["POST"])
 def update_rows():
@@ -881,11 +845,9 @@ def update_rows():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get a list of valid column names from the table to prevent SQL injection
         cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
         allowed_columns = {row[0] for row in cursor.fetchall()}
         
-        # You cannot update the primary key
         if 'id' in allowed_columns:
             allowed_columns.remove('id')
 
@@ -895,26 +857,21 @@ def update_rows():
             column_name = change.get('column')
             new_value = change.get('new_value')
 
-            # --- Security Check ---
             if column_name not in allowed_columns:
-                # If an invalid column is provided, abort the whole transaction
                 raise ValueError(f"Invalid column name '{column_name}' provided. Aborting save.")
 
             if row_id is None or column_name is None:
-                continue # Skip malformed change objects
+                continue
 
-            # Use parameterized queries to safely update the database
             query = f"UPDATE `{table_name}` SET `{column_name}` = %s WHERE `id` = %s;"
             cursor.execute(query, (new_value, row_id))
             updates_made += cursor.rowcount
 
-        # If all updates are successful, commit them as a single transaction
         conn.commit()
 
         return jsonify({"success": True, "message": f"{updates_made} change(s) saved successfully to {table_name}."})
 
     except Exception as e:
-        # If any error occurs, roll back all changes from this request
         if conn:
             conn.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
@@ -930,8 +887,7 @@ def save_table():
     if not json_data: return jsonify({"message": "Invalid JSON data", "success": False}), 400
     headers, data = json_data.get('headers', []), json_data.get('data', [])
     if not headers or not data: return jsonify({"message": "No data to save", "success": False}), 400
-    # ... (code continues)
-    return jsonify({"message": "Not fully implemented", "success": False}) # Placeholder for brevity
+    return jsonify({"message": "Not fully implemented", "success": False})
 
 
 @api_bp.route("/delete_file", methods=["POST"])
@@ -949,8 +905,6 @@ def delete_file():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
     
-# In api.py, add this new route. A good place is after the /delete_file route.
-
 @api_bp.route("/append_table", methods=["POST"])
 def append_table():
     if not is_logged_in():
@@ -969,39 +923,30 @@ def append_table():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 1. Get columns for both tables to find common columns
         cursor.execute(f"SHOW COLUMNS FROM `{source_table}`")
         source_cols = {row[0] for row in cursor.fetchall() if row[0].lower() != 'id'}
         
         cursor.execute(f"SHOW COLUMNS FROM `{target_table}`")
         target_cols = {row[0] for row in cursor.fetchall() if row[0].lower() != 'id'}
 
-        # Add any missing columns from source to target
         cols_to_add = source_cols - target_cols
         if cols_to_add:
-            # You need a way to determine the SQL type, let's reuse a helper if available
-            # For simplicity, we'll default to TEXT here, but a robust solution would map types.
             for col in cols_to_add:
-                 # This is a simplification. A full implementation would need _sql_type from preprocessing.py
                 cursor.execute(f"ALTER TABLE `{target_table}` ADD COLUMN `{col}` TEXT NULL")
         
-        # Re-fetch target columns after potential alteration
         cursor.execute(f"SHOW COLUMNS FROM `{target_table}`")
         final_target_cols = {row[0] for row in cursor.fetchall() if row[0].lower() != 'id'}
 
-        # 2. Find intersection of columns for the INSERT statement
         common_cols = sorted(list(source_cols.intersection(final_target_cols)))
         if not common_cols:
             raise ValueError("No common columns found between the two tables.")
 
         cols_sql = ", ".join([f"`{col}`" for col in common_cols])
         
-        # 3. Perform the append operation
         query = f"INSERT INTO `{target_table}` ({cols_sql}) SELECT {cols_sql} FROM `{source_table}`;"
         cursor.execute(query)
         rows_appended = cursor.rowcount
 
-        # 4. Optionally, delete the source table
         if delete_source:
             cursor.execute(f"DROP TABLE `{source_table}`;")
 
@@ -1035,37 +980,27 @@ def get_kpis():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # 1. Get all column names from the table
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
         cols = {str(r[0]) for r in cur.fetchall()}
 
-        # 2. Use the central filter builder to get the correct WHERE clause and parameters
         where_sql, params = build_filter_query(cols)
 
-        # 3. Calculate Total Accidents (this part was likely working already)
         cur.execute(f"SELECT COUNT(*) FROM `{table}` {where_sql}", params)
         total_accidents = cur.fetchone()[0] or 0
 
-        # 4. Calculate Total Victims
         total_victims = 0
         victim_col = next((c for c in ["VICTIM_COUNT", "VICTIM COUNT", "TOTAL_VICTIMS"] if c in cols), None)
         if victim_col:
-            # Use NULLIF to handle zeros correctly if you want to exclude them, or just SUM directly
             cur.execute(f"SELECT SUM(`{victim_col}`) FROM `{table}` {where_sql}", params)
-            # The result can be None if no rows match, so we handle that.
             total_victims = cur.fetchone()[0] or 0
 
-        # 5. Calculate Alcohol Involvement
         alcohol_cases = 0
-        # Check for one-hot encoded column first
         if "ALCOHOL_USED_Yes" in cols:
             cur.execute(f"SELECT SUM(COALESCE(`ALCOHOL_USED_Yes`, 0)) FROM `{table}` {where_sql}", params)
             alcohol_cases = cur.fetchone()[0] or 0
         else:
-            # Fallback to a categorical column
             alc_cat_col = next((c for c in ["ALCOHOL_USED", "ALCOHOL_INVOLVEMENT"] if c in cols), None)
             if alc_cat_col:
-                # Build a query that counts 'Yes' values, ignoring case.
                 sql = f"SELECT COUNT(*) FROM `{table}` {where_sql} AND UPPER(TRIM(`{alc_cat_col}`)) = 'YES'"
                 cur.execute(sql, params)
                 alcohol_cases = cur.fetchone()[0] or 0
@@ -1073,12 +1008,9 @@ def get_kpis():
         cur.close()
         conn.close()
 
-        # 6. Perform final calculations safely in Python
-        # Use np.divide for safe division to prevent "division by zero" errors
         avg_victims_per_accident = np.divide(total_victims, total_accidents) if total_accidents > 0 else 0
         alcohol_involvement_rate = np.divide(alcohol_cases, total_accidents) if total_accidents > 0 else 0
 
-        # 7. Send the complete data payload to the frontend
         return jsonify(success=True, data={
             "total_accidents": int(total_accidents),
             "total_victims": int(total_victims),
@@ -1088,11 +1020,9 @@ def get_kpis():
         })
 
     except ProgrammingError as e:
-        # Check for the specific "Table doesn't exist" error code
         if e.errno == 1146:
             return jsonify(success=False, error_type="NO_TABLE", message=f"Data table '{table}' not found. Please upload data on the Database page."), 404
         else:
-            # For other database errors, it's still useful to see the traceback during development
             return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
     except Exception as e:
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
@@ -1108,7 +1038,6 @@ def get_offense_types():
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
         cols = {str(r[0]) for r in cur.fetchall()}
         
-        # Adjust 'OFFENSE_TYPE' to match your actual column name
         offense_col = next((c for c in ["OFFENSE", "OFFENSE_TYPE", "CRIME_TYPE"] if c in cols), None)
         if not offense_col:
             return jsonify(success=False, message="No offense type column found.")
@@ -1128,15 +1057,8 @@ def get_offense_types():
     except Exception as e:
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>")
 
-# In api.py
-
 @api_bp.route("/by_season", methods=["GET"])
 def get_by_season():
-    """
-    Gets historical accident counts grouped by season using a direct SQL query.
-    This is designed to be consistent with get_offense_types and avoid the
-    forecasting pre-processing pipeline.
-    """
     if not is_logged_in(): 
         return jsonify(success=False, message="Not authorized"), 401
         
@@ -1148,7 +1070,6 @@ def get_by_season():
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
         cols = {str(r[0]) for r in cur.fetchall()}
         
-        # Find the correct season column, prioritizing the processed one
         season_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
         if not season_col:
             return jsonify(success=False, message="No season column found in the table.")
@@ -1161,7 +1082,6 @@ def get_by_season():
         cur.close()
         conn.close()
 
-        # The data structure must match what the historical chart now expects
         return jsonify(success=True, data={
             "labels": [r[0] for r in rows],
             "values": [r[1] for r in rows]
@@ -1172,9 +1092,6 @@ def get_by_season():
 
 @api_bp.route("/gender_kpis", methods=["GET"])
 def get_gender_kpis():
-    """
-    Provides KPI counts for Male, Female, and Unknown genders based on filters.
-    """
     if not is_logged_in(): 
         return jsonify(success=False, message="Not authorized"), 401
         
@@ -1182,24 +1099,19 @@ def get_gender_kpis():
     
     try:
         conn = get_db_connection()
-        # Use dictionary=True to access results by column name
         cur = conn.cursor(dictionary=True) 
         
-        # 1. Get all column names from the table
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
         cols = {str(r['Field']) for r in cur.fetchall()}
 
-        # 2. Use the central filter builder to get the correct WHERE clause and parameters
         where_sql, params = build_filter_query(cols)
 
-        # 3. Dynamically find the one-hot encoded gender columns
         male_col = next((c for c in cols if 'GENDER_MALE' in c.upper()), None)
         unknown_col = next((c for c in cols if 'GENDER_UNKNOWN' in c.upper()), None)
         
         if not male_col or not unknown_col:
              return jsonify(success=False, message="Required gender columns (e.g., GENDER_Male, GENDER_Unknown) not found in the table."), 500
 
-        # 4. Build the query to count each gender category
         query = f"""
             SELECT
                 SUM(CASE WHEN `{male_col}` = 1 THEN 1 ELSE 0 END) as male_count,
@@ -1208,7 +1120,6 @@ def get_gender_kpis():
             FROM `{table}`
         """
 
-        # Append the WHERE clause if filters are present
         if where_sql:
             query += where_sql
 
@@ -1220,7 +1131,6 @@ def get_gender_kpis():
         if not result:
             return jsonify({"success": True, "data": {"male_count": 0, "female_count": 0, "unknown_count": 0}})
 
-        # Prepare the final data, ensuring nulls are converted to 0
         data = {
             "male_count": result.get('male_count') or 0,
             "female_count": result.get('female_count') or 0,
@@ -1249,7 +1159,6 @@ def forecast_hourly():
         horizon = 12
 
     try:
-        # 1. Get database columns and build the powerful filter query
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(f"SHOW COLUMNS FROM `{table}`")
@@ -1259,7 +1168,6 @@ def forecast_hourly():
 
         where_sql, params = build_filter_query(cols)
         
-        # 2. Dynamically determine the best SQL expression for the hour
         hour_expr = "CAST(`HOUR_COMMITTED` AS SIGNED)" if "HOUR_COMMITTED" in cols else \
                     "HOUR(`TIME_COMMITTED`)" if "TIME_COMMITTED" in cols else \
                     "HOUR(`DATE_COMMITTED`)"
@@ -1267,10 +1175,9 @@ def forecast_hourly():
         if not hour_expr.startswith("CAST") and not hour_expr.startswith("HOUR"):
              return jsonify(success=False, message="No suitable hour/time column found for forecasting.")
 
-        # 3. Call the newly robust forecasting function
         result = run_categorical_forecast(
             table_name=table,
-            grouping_key=hour_expr, # Pass the complex expression
+            grouping_key=hour_expr,
             model_type=model,
             forecast_horizon=horizon,
             where_sql=where_sql,
@@ -1280,7 +1187,6 @@ def forecast_hourly():
         return jsonify(**result)
 
     except Exception as e:
-        # Revert this to a generic message after you confirm it works
         import traceback
         error_trace = traceback.format_exc()
         print("--- FORECASTING ERROR ---")
@@ -1305,7 +1211,6 @@ def forecast_day_of_week():
         cur.close()
         conn.close()
 
-        # Find the victim count column, similar to how you do in other routes
         victim_col = next((c for c in ["VICTIM_COUNT", "VICTIM COUNT", "TOTAL_VICTIMS"] if c in cols), None)
         if not victim_col:
             return jsonify(success=False, message="VICTIM_COUNT column not found in table.")
@@ -1313,7 +1218,6 @@ def forecast_day_of_week():
         where_sql, params = build_filter_query(cols)
         weekday_expr = "WEEKDAY(`DATE_COMMITTED`)" if "DATE_COMMITTED" in cols else "CAST(`WEEKDAY` AS SIGNED)"
         
-        # --- Run BOTH Forecasts ---
         count_result = run_categorical_forecast(
             table_name=table, grouping_key=weekday_expr, model_type=model_req,
             forecast_horizon=horizon, where_sql=where_sql, params=params
@@ -1327,7 +1231,6 @@ def forecast_day_of_week():
         if not count_result.get("success") or not victim_result.get("success"):
             return jsonify(success=False, message="Failed to generate one or both forecasts.")
 
-        # --- Combine the results ---
         day_map = {0: "1. Monday", 1: "2. Tuesday", 2: "3. Wednesday", 3: "4. Thursday", 4: "5. Friday", 5: "6. Saturday", 6: "7. Sunday"}
         labels = [day_map.get(int(label)) for label in count_result["data"]["labels"]]
 
@@ -1336,11 +1239,9 @@ def forecast_day_of_week():
         h_victims = np.array(victim_result["historical"])
         f_victims = np.array(victim_result["forecast"])
 
-        # Calculate average, handling division by zero
         h_avg = np.divide(h_victims, h_counts, out=np.zeros_like(h_victims, dtype=float), where=h_counts!=0)
         f_avg = np.divide(f_victims, f_counts, out=np.zeros_like(f_victims, dtype=float), where=f_counts!=0)
 
-        # Prepare final payload for the frontend
         model_display_name = 'Random Forest'
         if model_req == 'adaboost':
             model_display_name = 'Decision Tree'
@@ -1351,7 +1252,7 @@ def forecast_day_of_week():
             "forecast_counts": f_counts.tolist(),
             "historical_avg_victims": np.round(h_avg, 2).tolist(),
             "forecast_avg_victims": np.round(f_avg, 2).tolist(),
-            "model_used": model_display_name, # Send display name
+            "model_used": model_display_name,
             "horizon": horizon
         }
         
@@ -1361,8 +1262,6 @@ def forecast_day_of_week():
         import traceback
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
     
-# --- Replace your existing /forecast/top_barangays route with this one ---
-
 @api_bp.route("/forecast/top_barangays", methods=["GET"])
 def forecast_top_barangays():
     if not is_logged_in(): 
@@ -1383,10 +1282,8 @@ def forecast_top_barangays():
             cur.close(); conn.close()
             return jsonify(success=False, message="No BARANGAY column found."), 200
 
-        # 1. Get the standard filters as a dictionary (this part is correct)
         where_sql, params = build_filter_query(cols)
         
-        # 2. Find the Top 10 Barangays using the initial filters
         top_10_query = f"""
             SELECT `{brgy_col}` FROM `{table}` {where_sql}
             GROUP BY `{brgy_col}` ORDER BY COUNT(*) DESC LIMIT 10
@@ -1398,36 +1295,26 @@ def forecast_top_barangays():
         if not top_10_barangays:
             return jsonify(success=False, message="Not enough data to determine top barangays for forecasting.")
 
-        # --- START OF THE FIX ---
-        # 3. Add the Top 10 Barangays to the filter for the main forecast query.
-        # Instead of creating a flat list, we will add new entries to our 'params' DICTIONARY
-        # and create corresponding named placeholders.
-        
         brgy_placeholders = []
         for i, brgy_name in enumerate(top_10_barangays):
-            key = f"brgy_{i}"  # e.g., 'brgy_0', 'brgy_1'
+            key = f"brgy_{i}"
             brgy_placeholders.append(f"%({key})s")
-            params[key] = brgy_name # Add to the dictionary: {'brgy_0': 'BALIBAGO', 'brgy_1': 'MALABANIAS', ...}
+            params[key] = brgy_name
             
-        # Join the placeholders for the SQL IN clause: IN (%(brgy_0)s, %(brgy_1)s, ...)
         brgy_in_clause = ", ".join(brgy_placeholders)
         
-        # Append this new condition to our existing WHERE clause
         if where_sql:
             where_sql += f" AND `{brgy_col}` IN ({brgy_in_clause})"
         else:
             where_sql = f"WHERE `{brgy_col}` IN ({brgy_in_clause})"
-        # --- END OF THE FIX ---
 
-        # 4. Run the forecast. The 'params' dictionary now correctly contains ALL parameters
-        # (original filters + the new barangay filters) with unique keys.
         result = run_categorical_forecast(
             table_name=table,
             grouping_key=brgy_col,
             model_type=model,
             forecast_horizon=horizon,
             where_sql=where_sql,
-            params=params # Pass the complete dictionary
+            params=params
         )
         
         return jsonify(**result)
@@ -1476,29 +1363,20 @@ def forecast_alcohol_by_hour():
                 forecast_horizon=horizon, where_sql=where_sql, params=params
             )
 
-        # --- START OF THE FIX ---
-        # 4. Combine results using a DataFrame to align data by hour.
-        
-        # Create DataFrames for historical and forecast data.
-        df_hist = pd.DataFrame(index=range(24)) # Ensure a full 0-23 index
+        df_hist = pd.DataFrame(index=range(24))
         df_fcst = pd.DataFrame(index=range(24))
 
         for status in ["Yes", "No", "Unknown"]:
-            # Check if the forecast for this category was successful and returned data
             if results[status].get("success") and results[status]["data"]["labels"]:
                 res_data = results[status]["data"]
-                # Create a temporary Series with the hour as the index
                 s_hist = pd.Series(res_data["historical"], index=res_data["labels"], name=f"h_{status.lower()}")
                 s_fcst = pd.Series(res_data["forecast"], index=res_data["labels"], name=f"f_{status.lower()}")
-                # Join it to our main DataFrame. Pandas handles the alignment.
                 df_hist = df_hist.join(s_hist)
                 df_fcst = df_fcst.join(s_fcst)
 
-        # After joining, any missing data will be NaN. Fill it with 0.
         df_hist = df_hist.fillna(0).astype(int)
         df_fcst = df_fcst.fillna(0).astype(int)
         
-        # Now, extract the aligned and cleaned data as numpy arrays. They are guaranteed to have the same length.
         h_yes = df_hist.get("h_yes", pd.Series(0, index=range(24))).values
         h_no = df_hist.get("h_no", pd.Series(0, index=range(24))).values
         h_unk = df_hist.get("h_unknown", pd.Series(0, index=range(24))).values
@@ -1506,9 +1384,7 @@ def forecast_alcohol_by_hour():
         f_yes = df_fcst.get("f_yes", pd.Series(0, index=range(24))).values
         f_no = df_fcst.get("f_no", pd.Series(0, index=range(24))).values
         f_unk = df_fcst.get("f_unknown", pd.Series(0, index=range(24))).values
-        # --- END OF THE FIX ---
 
-        # The rest of the calculation is now safe.
         h_total = h_yes + h_no + h_unk
         f_total = f_yes + f_no + f_unk
 
@@ -1524,7 +1400,7 @@ def forecast_alcohol_by_hour():
             model_display_name = 'Decision Tree'
 
         final_data = {
-            "hours": list(range(24)), # Send a full list of 24 hours
+            "hours": list(range(24)),
             "historical_yes_pct": np.round(h_yes_pct, 2).tolist(),
             "forecast_yes_pct": np.round(f_yes_pct, 2).tolist(),
             "historical_no_pct": np.round(h_no_pct, 2).tolist(),
@@ -1540,8 +1416,6 @@ def forecast_alcohol_by_hour():
     except Exception as e:
         import traceback
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
-
-# --- Replace your existing forecast_victims_by_age route with this one ---
 
 @api_bp.route("/forecast/victims_by_age", methods=["GET"])
 def forecast_victims_by_age():
@@ -1562,7 +1436,6 @@ def forecast_victims_by_age():
         age_num_col = next((c for c in ["AGE", "VICTIM_AGE", "AGE_OF_VICTIM", "AGE_YEARS"] if c in cols), None)
         vic_count_col = next((c for c in ["VICTIM COUNT", "VICTIM_COUNT", "TOTAL_VICTIMS"] if c in cols), None)
 
-        # 2. If columns are still not found, return an error that lists the available columns for easy debugging.
         if not age_num_col or not vic_count_col:
             error_msg = (
                 f"Required AGE or VICTIM_COUNT columns not found for forecast. "
@@ -1637,8 +1510,6 @@ def forecast_victims_by_age():
         import traceback
         return jsonify(success=False, message=f"<pre>{traceback.format_exc()}</pre>"), 500
     
-# --- Add this new route to api.py ---
-
 @api_bp.route("/forecast/offense_types", methods=["GET"])
 def forecast_offense_types():
     if not is_logged_in(): 
@@ -1655,15 +1526,12 @@ def forecast_offense_types():
         cols = {str(r[0]) for r in cur.fetchall()}
         cur.close(); conn.close()
 
-        # 1. Find the correct offense column name
         offense_col = next((c for c in ["OFFENSE", "OFFENSE_TYPE", "CRIME_TYPE"] if c in cols), None)
         if not offense_col:
             return jsonify(success=False, message="No offense type column found.")
 
-        # 2. Get the standard filters from the user request
         where_sql, params = build_filter_query(cols)
         
-        # 3. Run the forecast, grouping by the offense column
         result = run_categorical_forecast(
             table_name=table,
             grouping_key=offense_col,
@@ -1696,15 +1564,12 @@ def forecast_by_season():
         cur.close()
         conn.close()
 
-        # 1. Find the correct season column name, prioritizing the cluster one
         season_col = next((c for c in ["SEASON_CLUSTER", "SEASON"] if c in cols), None)
         if not season_col:
             return jsonify(success=False, message="No season column (e.g., SEASON_CLUSTER) found.")
 
-        # 2. Get the standard filters from the user request
         where_sql, params = build_filter_query(cols)
 
-        # 3. Run the forecast, grouping by the season column
         result = run_categorical_forecast(
             table_name=table,
             grouping_key=season_col,
@@ -1742,7 +1607,6 @@ def delete_rows():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Use placeholders to prevent SQL injection
         placeholders = ', '.join(['%s'] * len(row_ids))
         query = f"DELETE FROM `{table_name}` WHERE `id` IN ({placeholders});"
         
@@ -1755,5 +1619,4 @@ def delete_rows():
         
         return jsonify({"success": True, "message": f"{rows_deleted} row(s) deleted successfully from {table_name}."})
     except Exception as e:
-        # For security, you might want to log the error instead of returning it
         return jsonify({"success": False, "message": str(e)}), 500
