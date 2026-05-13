@@ -4,8 +4,6 @@
   gap: 20px;
   width: 100%;
   margin-top: 20px;
-  overflow-y: auto;
-  max-height: 85vh;
   padding-right: 8px;
   padding-top: 2px;
 }
@@ -15,7 +13,8 @@
 }
 
 .card > div[id] {
-  overflow: auto;
+  overflow: hidden;
+  height: 300px;
   max-height: 400px;
 }
 
