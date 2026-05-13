@@ -1212,42 +1212,47 @@ async function loadOffenseTypeChart(filters = currentFilters) {
       });
 
       const trace = {
-        labels: cleanedLabels,
-        values: values,
-        type: "pie",
-        hole: 0.4,
-        textinfo: "percent",
-        textposition: "inside",
-        hoverinfo: "label+percent+value",
-        marker: {
-          colors: ["#4D8DFF", "#ff6700", "#FFB200"],
-        },
-      };
+  labels: cleanedLabels,
+  values: values,
+  type: "pie",
+  hole: 0.55,
+  textinfo: "percent",
+  textposition: "outside",
+  automargin: true,
+  hoverinfo: "label+percent+value",
+  sort: false,
+  direction: "clockwise",
+  domain: { x: [0, 1], y: [0.15, 1] },
+  marker: {
+    colors: ["#4D8DFF", "#ff6700", "#FFB200"],
+    line: { color: "#ffffff", width: 2 },
+  },
+};
 
       const layout = {
-        hovermode: "closest",
-        font: { family: "Chillax, sans-serif" },
-        showlegend: true,
-        legend: {
-          orientation: "h",
-          y: -0.1,
-          yanchor: "top",
-          font: {
-            weight: "normal",
-          },
-          hovermode: false,
-        },
-        margin: { t: 20, b: 50, l: 20, r: 20 },
-        annotations: [
-          {
-            font: { size: 20, family: "Chillax, sans-serif" },
-            showarrow: false,
-            text: `<b>${totalAccidents.toLocaleString()}</b><br>Total`,
-            x: 0.5,
-            y: 0.5,
-          },
-        ],
-      };
+  hovermode: "closest",
+  font: { family: "Chillax, sans-serif" },
+  showlegend: true,
+  legend: {
+    orientation: "h",
+    x: 0.5,
+    xanchor: "center",
+    y: 0.05,
+    yanchor: "top",
+    font: { family: "Chillax, sans-serif", size: 13, weight: "normal" },
+    hovermode: false,
+  },
+  margin: { t: 20, b: 20, l: 20, r: 20 },
+  annotations: [
+    {
+      font: { size: 20, family: "Chillax, sans-serif", color: "#1e1e1e" },
+      showarrow: false,
+      text: `<b>${totalAccidents.toLocaleString()}</b><br>Total`,
+      x: 0.5,
+      y: 0.575,
+    },
+  ],
+};
 
       Plotly.newPlot(chartId, [trace], layout, {
         displayModeBar: false,
